@@ -116,5 +116,6 @@ class ElectricityManagementSystem:
         return self.get_consumption(account_id, 'last_month')
 
 # 创建系统实例
-ems = ElectricityManagementSystem()
+if __name__ == "__main__":
+    ems = ElectricityManagementSystem()
 
