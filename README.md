@@ -1,32 +1,85 @@
-# 电力消费管理 API 系统
+# Power Consumption Management API System
 
-## 项目概述
-本系统为新加坡能源市场管理局(EMA)开发的电力消费管理API系统。系统提供完整的用户账户管理、用电数据收集和查询功能。
+## Project Overview
+This system is a power consumption management API system developed for the Energy Market Authority (EMA) of Singapore. It provides comprehensive user account management, meter data collection, and query functionality, built using the FastAPI framework for RESTful API services.
 
-## 主要功能
-1. 账户管理
-   - 新用户注册
-   - 账户信息管理
+## Key Features
+1. Account Management
+   - New user registration (including meter ID binding)
+   - Account information management (including family member information)
+   - Meter-to-account mapping maintenance
 
-2. 电表数据采集
-   - 接收IoT设备半小时间隔的用电量数据
-   - 数据实时存储和验证
+2. Meter Data Collection
+   - Receiving meter readings from IoT devices at 30-minute intervals (on the hour and half-hour)
+   - Real-time data storage and multiple validations
+   - Automatic validation of reading reasonability and time accuracy
+   - Support for batch data import and export (CSV format)
 
-3. 用电查询功能
-   - 最近半小时用电量
-   - 当日用电量
-   - 本周用电量
-   - 本月用电量
-   - 上月用电量
+3. Power Consumption Query Functions
+   - Last 30-minute consumption (calculated based on reading differences)
+   - Daily consumption statistics
+   - Weekly consumption statistics
+   - Monthly consumption statistics
+   - Previous month consumption statistics
+   - Support for custom time period queries
 
-4. 账单查询
-   - 查询上月账单详情（千瓦时）
-   - 历史账单查询
+4. Bill Query
+   - Previous month bill details (in kilowatt-hours)
+   - Historical bill queries
+   - Bill data archiving functionality
 
-## 技术架构
-- 编程语言：Python
-- 数据存储：内存数据结构
-- API风格：RESTful
+5. Data Management
+   - Support for data archiving and preparation
+   - Historical data export functionality
+   - Data backup and recovery
 
-## API文档
-详细的API接口文档请参考APIs.py文件中的注释说明。 
+## Technical Architecture
+- Programming Language: Python 3.8+
+- Web Framework: FastAPI
+- API Documentation: Auto-generated Swagger/OpenAPI documentation
+- Data Storage: In-memory data structures (time-series based meter readings)
+- Data Format: JSON/CSV
+- API Style: RESTful
+- ASGI Server: uvicorn
+
+## Data Structures
+- Meter Readings: Dictionary with timestamp indexing (records every 30 minutes, 23:59 data automatically normalized to next day 00:00)
+- Power Consumption: Real-time calculation based on meter reading differences
+- Account Information: Contains basic information and associated meter reading data
+- Meter Mapping: Mapping relationship between meter IDs and accounts
+- Response Models: Using Pydantic models for data validation and serialization
+
+## Data Validation
+- Time Validation: Ensuring readings are at hour marks, half-hour marks, or 23:59
+- Reading Validation: Ensuring readings continuously increase
+- Meter Validation: Ensuring meter IDs are unique and registered
+- Data Normalization: 23:59 readings automatically converted to next day 00:00
+- Input Validation: Using Pydantic models for request data validation
+
+## API Endpoints
+1. POST /register_account - Register new account
+2. POST /receive_meter_reading - Receive meter reading
+3. GET /get_consumption - Query power consumption
+4. GET /get_last_month_bill - Query last month's bill
+5. POST /archive_and_prepare - Archive data
+
+Detailed API documentation can be accessed through the system's /docs endpoint (Swagger UI).
+
+## Deployment Instructions
+1. Install dependencies:
+   ```bash
+   pip install fastapi uvicorn pydantic
+   ```
+2. Run server:
+   ```bash
+   uvicorn APIs:app --reload
+   ```
+
+## File Description
+- APIs.py: Core API implementation and data processing logic
+- Import.py: Data import and processing functionality
+- daily.py: Daily power consumption statistics functionality
+- monthly.py: Monthly power consumption statistics functionality
+- main.py: Application entry point
+- mapping.csv: Meter and account mapping data
+- meter_readings.csv: Meter reading data 
