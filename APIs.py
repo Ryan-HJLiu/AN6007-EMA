@@ -68,12 +68,12 @@ class ElectricityAccount:
                            if start_time <= ts <= end_time}
         
         if not relevant_readings:
-            return 0.0
+            raise ValueError("No meter readings found in the specified time period.")
         
         # Get first and last readings within the time period
         timestamps = sorted(relevant_readings.keys())
         if len(timestamps) < 2:
-            return 0.0
+            raise ValueError("Not enough readings to calculate consumption. At least two readings are required.")
             
         first_reading = relevant_readings[timestamps[0]]
         last_reading = relevant_readings[timestamps[-1]]
@@ -325,14 +325,17 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
 
 @app.get("/get_consumption", response_model=ConsumptionResponse)
 async def get_consumption(meter_id: str, period: str):
-    consumption = ems.get_consumption(meter_id, period)
-    if consumption is None:
-        raise HTTPException(status_code=404, detail="Meter not found or invalid period")
-    return ConsumptionResponse(
-        consumption=consumption,
-        period=period,
-        meter_id=meter_id
-    )
+    try:
+        consumption = ems.get_consumption(meter_id, period)
+        if consumption is None:
+            raise HTTPException(status_code=404, detail="Meter not found or invalid period")
+        return ConsumptionResponse(
+            consumption=consumption,
+            period=period,
+            meter_id=meter_id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/get_last_month_bill", response_model=ConsumptionResponse)
 async def get_last_month_bill(meter_id: str):

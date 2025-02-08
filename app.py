@@ -154,6 +154,37 @@ async def get_consumption(meter_id: str, period: str):
         "meter_id": meter_id
     }
 
+@app.get("/get_last_month_bill")
+async def get_last_month_bill(meter_id: str):
+    """
+    获取上月账单
+    
+    参数:
+    - meter_id: 电表ID
+    
+    返回:
+    - consumption: 上月用电量
+    - meter_id: 电表ID
+    - timestamp: 查询时间戳
+    
+    示例:
+    ```
+    /get_last_month_bill?meter_id=123-456-789
+    ```
+    """
+    if system_state.is_maintenance_mode:
+        raise HTTPException(status_code=503, detail="System is in maintenance mode")
+    
+    consumption = api_system.get_last_month_bill(meter_id)
+    if consumption is None:
+        raise HTTPException(status_code=404, detail="Meter not found")
+    
+    return {
+        "consumption": consumption,
+        "meter_id": meter_id,
+        "timestamp": datetime.now().isoformat()
+    }
+
 # 维护模式相关函数
 async def perform_daily_maintenance():
     """执行每日维护任务"""
