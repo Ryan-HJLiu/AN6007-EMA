@@ -19,10 +19,12 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
+import os
+import pandas as pd
 
 # Add response models
 class AccountResponse(BaseModel):
-    account_id: str
+    meter_id: str
     message: str = "Account successfully created"
 
 class MeterReadingResponse(BaseModel):
@@ -32,7 +34,7 @@ class MeterReadingResponse(BaseModel):
 class ConsumptionResponse(BaseModel):
     consumption: float
     period: str
-    account_id: str
+    meter_id: str
 
 class ArchiveResponse(BaseModel):
     success: bool
@@ -42,11 +44,10 @@ class ArchiveResponse(BaseModel):
 class ElectricityAccount:
     """Electricity Account class for storing and managing individual user's power consumption data"""
     
-    def __init__(self, account_id: str, owner_name: str, address: str, meter_id: str):
-        self.account_id = account_id
+    def __init__(self, meter_id: str, owner_name: str, address: str):
+        self.meter_id = meter_id
         self.owner_name = owner_name
         self.address = address
-        self.meter_id = meter_id  # Add meter ID
         self.family_members = []  # Store family member information
         self.meter_readings = {}  # Store meter readings, format: {timestamp: reading}
         self.created_at = datetime.now()
@@ -84,8 +85,7 @@ class ElectricityManagementSystem:
     """Main Electricity Management System class implementing core API functionality"""
     
     def __init__(self):
-        self.accounts: Dict[str, ElectricityAccount] = {}
-        self.meter_to_account: Dict[str, str] = {}
+        self.accounts: Dict[str, ElectricityAccount] = {}  # 使用meter_id作为key
         self.archived_readings: Dict[str, Dict[str, Dict[datetime, float]]] = {}  # Store archived readings
         
     def register_account(self, owner_name: str, address: str, meter_id: str) -> str:
@@ -98,15 +98,13 @@ class ElectricityManagementSystem:
             meter_id: Meter ID
             
         Returns:
-            str: Newly created account ID
+            str: Meter ID
         """
-        if meter_id in self.meter_to_account:
+        if meter_id in self.accounts:
             raise ValueError("Meter already registered")
             
-        account_id = f"ACC_{len(self.accounts) + 1}"
-        self.accounts[account_id] = ElectricityAccount(account_id, owner_name, address, meter_id)
-        self.meter_to_account[meter_id] = account_id
-        return account_id
+        self.accounts[meter_id] = ElectricityAccount(meter_id, owner_name, address)
+        return meter_id
     
     def record_meter_reading(self, meter_id: str, timestamp: datetime, reading: float) -> bool:
         """
@@ -121,7 +119,7 @@ class ElectricityManagementSystem:
             bool: Whether the data was successfully recorded
         """
         # Validate meter ID
-        if meter_id not in self.meter_to_account:
+        if meter_id not in self.accounts:
             return False
             
         # Validate timestamp is on the hour, half-hour, or 23:59
@@ -137,8 +135,7 @@ class ElectricityManagementSystem:
         if timestamp.hour == 23 and timestamp.minute == 59:
             timestamp = (timestamp + timedelta(minutes=1)).replace(second=0, microsecond=0)
             
-        account_id = self.meter_to_account[meter_id]
-        account = self.accounts[account_id]
+        account = self.accounts[meter_id]
         
         # Validate reading is reasonable (new reading should be greater than all previous readings)
         previous_readings = {ts: r for ts, r in account.meter_readings.items() if ts < timestamp}
@@ -148,21 +145,21 @@ class ElectricityManagementSystem:
         account.meter_readings[timestamp] = reading
         return True
     
-    def get_consumption(self, account_id: str, period: str) -> Optional[float]:
+    def get_consumption(self, meter_id: str, period: str) -> Optional[float]:
         """
         Query power consumption for specified period
         
         Args:
-            account_id: Account ID
+            meter_id: Meter ID
             period: Query period ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
             
         Returns:
             float: Total power consumption
         """
-        if account_id not in self.accounts:
+        if meter_id not in self.accounts:
             return None
             
-        account = self.accounts[account_id]
+        account = self.accounts[meter_id]
         now = datetime.now()
         
         # Adjust current time to the nearest valid time point
@@ -196,17 +193,17 @@ class ElectricityManagementSystem:
             
         return account.calculate_consumption(start_time, end_time)
     
-    def get_last_month_bill(self, account_id: str) -> Optional[float]:
+    def get_last_month_bill(self, meter_id: str) -> Optional[float]:
         """
         Get last month's bill (kWh only)
         
         Args:
-            account_id: Account ID
+            meter_id: Meter ID
             
         Returns:
             float: Last month's total power consumption
         """
-        return self.get_consumption(account_id, 'last_month')
+        return self.get_consumption(meter_id, 'last_month')
 
     def archive_readings(self, period: str) -> bool:
         """
@@ -218,38 +215,71 @@ class ElectricityManagementSystem:
         Returns:
             bool: Whether archiving was successful
         """
-        now = datetime.now()
-        
-        if period not in ['daily', 'monthly']:
-            return False
+        try:
+            now = datetime.now()
             
-        # Archive data for each account
-        for account_id, account in self.accounts.items():
-            if account_id not in self.archived_readings:
-                self.archived_readings[account_id] = {'daily': {}, 'monthly': {}}
-                
-            # Get readings to archive
-            if period == 'daily':
-                start_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                archive_key = start_time.date().isoformat()
-            else:  # monthly
-                start_time = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                archive_key = start_time.strftime('%Y-%m')
-                
-            # Filter and store readings for the current period
-            period_readings = {
-                ts: reading for ts, reading in account.meter_readings.items()
-                if ts >= start_time
-            }
+            if period not in ['daily', 'monthly']:
+                return False
             
-            if period_readings:
-                self.archived_readings[account_id][period][archive_key] = period_readings
+            # 创建存档目录
+            archive_dir = os.path.join(os.getcwd(), "Archive")
+            os.makedirs(archive_dir, exist_ok=True)
+            
+            # 准备所有数据
+            all_readings = []
+            
+            # Archive data for each account
+            for meter_id, account in self.accounts.items():
+                # Get readings to archive
+                if period == 'daily':
+                    start_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                    archive_key = start_time.date().isoformat()
+                    filename = f"daily_{archive_key}.csv"
+                else:  # monthly
+                    start_time = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    archive_key = start_time.strftime('%Y-%m')
+                    filename = f"monthly_{archive_key}.csv"
                 
-                # Remove archived data from current readings
-                # for ts in period_readings.keys():
-                #     del account.meter_readings[ts]
+                # Filter readings for the current period
+                period_readings = {
+                    ts: reading for ts, reading in account.meter_readings.items()
+                    if ts >= start_time
+                }
+                
+                # 将数据添加到列表中（只包含必要字段）
+                for timestamp, reading in period_readings.items():
+                    all_readings.append({
+                        'meter_id': meter_id,
+                        'timestamp': timestamp,
+                        'reading': reading
+                    })
+                
+                if period_readings:
+                    # 存储到归档数据结构中
+                    if meter_id not in self.archived_readings:
+                        self.archived_readings[meter_id] = {'daily': {}, 'monthly': {}}
+                    self.archived_readings[meter_id][period][archive_key] = period_readings
                     
-        return True
+                    # 从当前读数中删除已归档的数据
+                    for ts in period_readings.keys():
+                        del account.meter_readings[ts]
+            
+            # 如果有数据要归档
+            if all_readings:
+                # 创建DataFrame并保存为CSV
+                df = pd.DataFrame(all_readings)
+                # 确保timestamp列以正确的格式输出
+                df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%dT%H:%M:%S')
+                df = df.sort_values(['meter_id', 'timestamp'])
+                csv_path = os.path.join(archive_dir, filename)
+                df.to_csv(csv_path, index=False, encoding='utf-8')
+                print(f"Archived data saved to {csv_path}")
+                
+            return True
+            
+        except Exception as e:
+            print(f"Error during archiving: {str(e)}")
+            return False
 
 # Create FastAPI application
 app = FastAPI(title="Power Consumption Management API System")
@@ -258,13 +288,33 @@ ems = ElectricityManagementSystem()
 @app.post("/register_account", response_model=AccountResponse)
 async def register_account(owner_name: str, region: str, meter_id: str):
     try:
-        account_id = ems.register_account(owner_name, region, meter_id)
-        return AccountResponse(account_id=account_id)
+        meter_id = ems.register_account(owner_name, region, meter_id)
+        return AccountResponse(meter_id=meter_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/receive_meter_reading", response_model=MeterReadingResponse)
 async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: float):
+    """
+    接收电表读数
+    
+    参数:
+    - meter_id: 电表ID
+    - timestamp: 时间戳 (格式: YYYY-MM-DDTHH:mm:00, 必须是整点或半点)
+    - reading: 读数值
+    
+    示例:
+    ```
+    /receive_meter_reading?meter_id=123-456-789&timestamp=2025-02-08T01:00:00&reading=100.5
+    ```
+    """
+    # 验证时间戳是否在整点或半点
+    if timestamp.minute not in [0, 30] or timestamp.second != 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="Timestamp must be on the hour (HH:00:00) or half hour (HH:30:00)"
+        )
+    
     success = ems.record_meter_reading(meter_id, timestamp, reading)
     return MeterReadingResponse(
         success=success,
@@ -272,25 +322,25 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
     )
 
 @app.get("/get_consumption", response_model=ConsumptionResponse)
-async def get_consumption(account_id: str, period: str):
-    consumption = ems.get_consumption(account_id, period)
+async def get_consumption(meter_id: str, period: str):
+    consumption = ems.get_consumption(meter_id, period)
     if consumption is None:
-        raise HTTPException(status_code=404, detail="Account not found or invalid period")
+        raise HTTPException(status_code=404, detail="Meter not found or invalid period")
     return ConsumptionResponse(
         consumption=consumption,
         period=period,
-        account_id=account_id
+        meter_id=meter_id
     )
 
 @app.get("/get_last_month_bill", response_model=ConsumptionResponse)
-async def get_last_month_bill(account_id: str):
-    consumption = ems.get_last_month_bill(account_id)
+async def get_last_month_bill(meter_id: str):
+    consumption = ems.get_last_month_bill(meter_id)
     if consumption is None:
-        raise HTTPException(status_code=404, detail="Account not found")
+        raise HTTPException(status_code=404, detail="Meter not found")
     return ConsumptionResponse(
         consumption=consumption,
         period="last_month",
-        account_id=account_id
+        meter_id=meter_id
     )
 
 @app.post("/archive_and_prepare", response_model=ArchiveResponse)
@@ -305,11 +355,5 @@ async def archive_and_prepare(period: str):
         period=period
     )
 
-
-
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
-
-# After server starts, you can access API documentation at:
-# Swagger UI: http://localhost:8000/docs
-# ReDoc: http://localhost:8000/redoc

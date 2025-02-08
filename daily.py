@@ -2,8 +2,8 @@
 """
 Power Consumption Management - Daily Maintenance Program
 Implementation:
-1. Archive current day's meter readings
-2. Initialize meter readings for the new day
+1. Archive current day's meter readings to CSV file
+2. Clear memory for the new day
 """
 
 from datetime import datetime
@@ -18,6 +18,7 @@ class MaintenanceResponse(BaseModel):
     success: bool
     message: str
     timestamp: str
+    archive_path: Optional[str] = None
 
 # Create maintenance server application
 maintenance_app = FastAPI(title="Power Consumption Management System Maintenance Service")
@@ -28,30 +29,43 @@ class DailyMaintenanceServer:
     def __init__(self, main_api_url: str = "http://localhost:8000"):
         self.main_api_url = main_api_url
 
-    async def archive_today_readings(self) -> bool:
+    async def archive_today_readings(self) -> tuple[bool, Optional[str]]:
         """
-        Archive current day's meter readings
+        Archive current day's meter readings to CSV
         
         Returns:
-            bool: Whether archiving was successful
+            tuple: (success status, archive file path if successful)
         """
         try:
-            # Call the main API's archive endpoint
+            # 调用主API的归档endpoint
             response = requests.post(
                 f"{self.main_api_url}/archive_and_prepare",
                 params={"period": "daily"}
             )
             
             if response.status_code == 200:
-                print(f"Archive completed: {response.json()['message']}")
-                return True
+                # 获取当前日期作为文件名
+                today = datetime.now().date().isoformat()
+                expected_file = os.path.join(
+                    os.getcwd(), 
+                    "Archive", 
+                    f"daily_{today}.csv"
+                )
+                
+                if os.path.exists(expected_file):
+                    print(f"Archive completed: {response.json()['message']}")
+                    print(f"Archive file saved at: {expected_file}")
+                    return True, expected_file
+                else:
+                    print("Warning: Archive completed but file not found")
+                    return True, None
             else:
                 print(f"Archive failed: {response.json().get('detail', 'Unknown error')}")
-                return False
+                return False, None
                 
         except Exception as e:
             print(f"Error during archive process: {str(e)}")
-            return False
+            return False, None
 
 # Create maintenance server instance
 daily_server = DailyMaintenanceServer()
@@ -59,17 +73,21 @@ daily_server = DailyMaintenanceServer()
 @maintenance_app.post("/perform_daily_maintenance", response_model=MaintenanceResponse)
 async def perform_daily_maintenance():
     """
-    Perform daily maintenance tasks:
-    1. Archive today's readings
-    2. Prepare for receiving new day's readings
+    执行每日维护任务:
+    1. 将当日的电表读数保存为CSV文件
+    2. 清理内存中的当日数据
+    
+    CSV文件将保存在 ./Archive 目录下
+    文件命名格式: daily_YYYY-MM-DD.csv
     """
     try:
-        success = await daily_server.archive_today_readings()
+        success, archive_path = await daily_server.archive_today_readings()
         
         return MaintenanceResponse(
             success=success,
             message="Daily maintenance completed" if success else "Error during maintenance",
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
+            archive_path=archive_path
         )
     except Exception as e:
         raise HTTPException(
@@ -77,10 +95,3 @@ async def perform_daily_maintenance():
             detail=f"Maintenance process failed: {str(e)}"
         )
 
-if __name__ == "__main__":
-    import uvicorn
-    # Run maintenance server on a different port
-    uvicorn.run(maintenance_app, host="localhost", port=8001)
-
-# Trigger maintenance task via HTTP request:
-# curl -X POST http://localhost:8001/perform_daily_maintenance
