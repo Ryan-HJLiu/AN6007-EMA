@@ -157,7 +157,7 @@ async def get_consumption(meter_id: str, period: str):
 # 维护模式相关函数
 async def perform_daily_maintenance():
     """执行每日维护任务"""
-    success = api_system.archive_readings("daily")
+    success = api_system.archive_readings("daily", clear_memory=False)  # 日度维护不清除内存
     return MaintenanceResponse(
         success=success,
         message="Daily maintenance completed" if success else "Daily maintenance failed",
@@ -167,7 +167,7 @@ async def perform_daily_maintenance():
 
 async def perform_monthly_maintenance(meter_id: str):
     """执行月度维护任务"""
-    archive_success = api_system.archive_readings("monthly")
+    archive_success = api_system.archive_readings("monthly", clear_memory=True)  # 月度维护清除内存
     current_month = api_system.get_consumption(meter_id, "this_month")
     last_month = api_system.get_last_month_bill(meter_id)
     

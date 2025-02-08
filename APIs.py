@@ -205,12 +205,13 @@ class ElectricityManagementSystem:
         """
         return self.get_consumption(meter_id, 'last_month')
 
-    def archive_readings(self, period: str) -> bool:
+    def archive_readings(self, period: str, clear_memory: bool = False) -> bool:
         """
         Archive meter readings for specified period and prepare for new data
         
         Args:
             period: Archive period ('daily' or 'monthly')
+            clear_memory: Whether to clear the archived data from memory after saving
             
         Returns:
             bool: Whether archiving was successful
@@ -260,9 +261,10 @@ class ElectricityManagementSystem:
                         self.archived_readings[meter_id] = {'daily': {}, 'monthly': {}}
                     self.archived_readings[meter_id][period][archive_key] = period_readings
                     
-                    # 从当前读数中删除已归档的数据
-                    for ts in period_readings.keys():
-                        del account.meter_readings[ts]
+                    # 只有在 clear_memory 为 True 时才清除内存数据
+                    if clear_memory:
+                        for ts in period_readings.keys():
+                            del account.meter_readings[ts]
             
             # 如果有数据要归档
             if all_readings:
