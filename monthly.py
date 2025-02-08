@@ -15,6 +15,7 @@ from pydantic import BaseModel
 import requests
 import os
 from typing import Optional
+from loggers import logger
 
 class MaintenanceResponse(BaseModel):
     success: bool
@@ -38,35 +39,29 @@ class MonthlyMaintenanceServer:
         Returns:
             tuple: (success status, archive file path if successful)
         """
+        logger.info("Starting monthly archive process")
         try:
-            # 调用主API的归档endpoint
             response = requests.post(
                 f"{self.main_api_url}/archive_and_prepare",
                 params={"period": "monthly"}
             )
-            
+
             if response.status_code == 200:
-                # 获取当前月份作为文件名
                 current_month = datetime.now().strftime('%Y-%m')
-                expected_file = os.path.join(
-                    os.getcwd(), 
-                    "Archive", 
-                    f"monthly_{current_month}.csv"
-                )
-                
+                expected_file = os.path.join(os.getcwd(), "Archive", f"monthly_{current_month}.csv")
+
                 if os.path.exists(expected_file):
-                    print(f"Archive completed: {response.json()['message']}")
-                    print(f"Archive file saved at: {expected_file}")
+                    logger.info(f"Monthly archive completed successfully. File saved at: {expected_file}")
                     return True, expected_file
                 else:
-                    print("Warning: Archive completed but file not found")
+                    logger.warning("Monthly archive completed, but file not found.")
                     return True, None
             else:
-                print(f"Archive failed: {response.json().get('detail', 'Unknown error')}")
+                logger.error(f"Monthly archive failed. Response: {response.json().get('detail', 'Unknown error')}")
                 return False, None
-                
+
         except Exception as e:
-            print(f"Error during archive process: {str(e)}")
+            logger.exception(f"Exception during monthly archive process: {str(e)}")
             return False, None
 
 # Create maintenance server instance

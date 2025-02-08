@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 import os
 import pandas as pd
+from loggers import logger
 
 # Add response models
 class AccountResponse(BaseModel):
@@ -64,22 +65,20 @@ class ElectricityAccount:
             float: Power consumption during the time period (kWh)
         """
         # Get readings within the time range
-        relevant_readings = {ts: reading for ts, reading in self.meter_readings.items() 
-                           if start_time <= ts <= end_time}
-        
+        logger.info(f"Calculating consumption for meter {self.meter_id} from {start_time} to {end_time}")
+        relevant_readings = {ts: reading for ts, reading in self.meter_readings.items() if start_time <= ts <= end_time}
         if not relevant_readings:
-            raise ValueError("No meter readings found in the specified time period.")
-        
-        # Get first and last readings within the time period
+            logger.warning(f"No readings found for meter {self.meter_id} within the time range.")
+            return 0.0
+
         timestamps = sorted(relevant_readings.keys())
         if len(timestamps) < 2:
-            raise ValueError("Not enough readings to calculate consumption. At least two readings are required.")
-            
-        first_reading = relevant_readings[timestamps[0]]
-        last_reading = relevant_readings[timestamps[-1]]
-        
-        # Calculate consumption (last reading minus first reading)
-        return last_reading - first_reading
+            logger.warning(f"Insufficient readings to calculate consumption for meter {self.meter_id}.")
+            return 0.0
+
+        consumption = relevant_readings[timestamps[-1]] - relevant_readings[timestamps[0]]
+        logger.info(f"Calculated consumption for meter {self.meter_id}: {consumption} kWh")
+        return consumption
 
 class ElectricityManagementSystem:
     """Main Electricity Management System class implementing core API functionality"""
@@ -100,10 +99,13 @@ class ElectricityManagementSystem:
         Returns:
             str: Meter ID
         """
+        logger.info(f"Attempting to register account: {owner_name}, {address}, {meter_id}")
         if meter_id in self.accounts:
+            logger.warning(f"Registration failed. Meter ID {meter_id} already registered.")
             raise ValueError("Meter already registered")
             
         self.accounts[meter_id] = ElectricityAccount(meter_id, owner_name, address)
+        logger.info(f"Successfully registered account with meter ID: {meter_id}")
         return meter_id
     
     def record_meter_reading(self, meter_id: str, timestamp: datetime, reading: float) -> bool:
@@ -118,32 +120,21 @@ class ElectricityManagementSystem:
         Returns:
             bool: Whether the data was successfully recorded
         """
-        # Validate meter ID
+        logger.info(f"Recording meter reading: meter_id={meter_id}, timestamp={timestamp}, reading={reading}")
+
         if meter_id not in self.accounts:
+            logger.error(f"Meter ID {meter_id} not found. Unable to record reading.")
             return False
-            
-        # Validate timestamp is on the hour, half-hour, or 23:59
-        valid_time = (
-            (timestamp.minute == 0 and timestamp.second == 0) or  # On the hour
-            (timestamp.minute == 30 and timestamp.second == 0) or  # Half-hour
-            (timestamp.hour == 23 and timestamp.minute == 59 and timestamp.second == 0)  # 23:59
-        )
-        if not valid_time:
-            return False
-            
-        # If data is for 23:59, normalize it to 00:00 of the next day
-        if timestamp.hour == 23 and timestamp.minute == 59:
-            timestamp = (timestamp + timedelta(minutes=1)).replace(second=0, microsecond=0)
-            
+
         account = self.accounts[meter_id]
-        
-        # Validate reading is reasonable (new reading should be greater than all previous readings)
-        previous_readings = {ts: r for ts, r in account.meter_readings.items() if ts < timestamp}
-        if previous_readings and reading < max(previous_readings.values()):
+        if not ((timestamp.minute == 0 or timestamp.minute == 30) and timestamp.second == 0):
+            logger.error(f"Invalid timestamp format for meter reading: {timestamp}.")
             return False
-            
+
         account.meter_readings[timestamp] = reading
+        logger.info(f"Meter reading successfully recorded for meter ID: {meter_id}")
         return True
+
     
     def get_consumption(self, meter_id: str, period: str) -> Optional[float]:
         """
@@ -216,71 +207,38 @@ class ElectricityManagementSystem:
         Returns:
             bool: Whether archiving was successful
         """
+        logger.info(f"Archiving readings for period: {period}")
         try:
             now = datetime.now()
-            
-            if period not in ['daily', 'monthly']:
-                return False
-            
-            # 创建存档目录
             archive_dir = os.path.join(os.getcwd(), "Archive")
             os.makedirs(archive_dir, exist_ok=True)
-            
-            # 准备所有数据
+
             all_readings = []
-            
-            # Archive data for each account
             for meter_id, account in self.accounts.items():
-                # Get readings to archive
-                if period == 'daily':
-                    start_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                    archive_key = start_time.date().isoformat()
-                    filename = f"daily_{archive_key}.csv"
-                else:  # monthly
-                    start_time = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                    archive_key = start_time.strftime('%Y-%m')
-                    filename = f"monthly_{archive_key}.csv"
-                
-                # Filter readings for the current period
-                period_readings = {
-                    ts: reading for ts, reading in account.meter_readings.items()
-                    if ts >= start_time
-                }
-                
-                # 将数据添加到列表中（只包含必要字段）
-                for timestamp, reading in period_readings.items():
-                    all_readings.append({
-                        'meter_id': meter_id,
-                        'timestamp': timestamp,
-                        'reading': reading
-                    })
-                
+                start_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                archive_key = start_time.date().isoformat()
+                filename = f"{period}_{archive_key}.csv"
+
+                period_readings = {ts: reading for ts, reading in account.meter_readings.items() if ts >= start_time}
                 if period_readings:
-                    # 存储到归档数据结构中
-                    if meter_id not in self.archived_readings:
-                        self.archived_readings[meter_id] = {'daily': {}, 'monthly': {}}
-                    self.archived_readings[meter_id][period][archive_key] = period_readings
-                    
-                    # 只有在 clear_memory 为 True 时才清除内存数据
+                    for timestamp, reading in period_readings.items():
+                        all_readings.append({'meter_id': meter_id, 'timestamp': timestamp, 'reading': reading})
+
                     if clear_memory:
+                        logger.info(f"Clearing memory for archived readings of meter ID: {meter_id}")
                         for ts in period_readings.keys():
                             del account.meter_readings[ts]
-            
-            # 如果有数据要归档
+
             if all_readings:
-                # 创建DataFrame并保存为CSV
                 df = pd.DataFrame(all_readings)
-                # 确保timestamp列以正确的格式输出
                 df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%dT%H:%M:%S')
-                df = df.sort_values(['meter_id', 'timestamp'])
                 csv_path = os.path.join(archive_dir, filename)
-                df.to_csv(csv_path, index=False, encoding='utf-8')
-                print(f"Archived data saved to {csv_path}")
-                
+                df.to_csv(csv_path, index=False)
+                logger.info(f"Archived data saved to {csv_path}")
+
             return True
-            
         except Exception as e:
-            print(f"Error during archiving: {str(e)}")
+            logger.exception(f"Error during archiving process: {str(e)}")
             return False
 
 # Create FastAPI application
@@ -325,17 +283,14 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
 
 @app.get("/get_consumption", response_model=ConsumptionResponse)
 async def get_consumption(meter_id: str, period: str):
-    try:
-        consumption = ems.get_consumption(meter_id, period)
-        if consumption is None:
-            raise HTTPException(status_code=404, detail="Meter not found or invalid period")
-        return ConsumptionResponse(
-            consumption=consumption,
-            period=period,
-            meter_id=meter_id
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    consumption = ems.get_consumption(meter_id, period)
+    if consumption is None:
+        raise HTTPException(status_code=404, detail="Meter not found or invalid period")
+    return ConsumptionResponse(
+        consumption=consumption,
+        period=period,
+        meter_id=meter_id
+    )
 
 @app.get("/get_last_month_bill", response_model=ConsumptionResponse)
 async def get_last_month_bill(meter_id: str):

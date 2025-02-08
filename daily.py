@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import requests
 import asyncio
 from typing import Optional
+from loggers import logger
 
 class MaintenanceResponse(BaseModel):
     success: bool
@@ -36,35 +37,29 @@ class DailyMaintenanceServer:
         Returns:
             tuple: (success status, archive file path if successful)
         """
+        logger.info("Starting daily archive process")
         try:
-            # 调用主API的归档endpoint
             response = requests.post(
                 f"{self.main_api_url}/archive_and_prepare",
                 params={"period": "daily"}
             )
-            
+
             if response.status_code == 200:
-                # 获取当前日期作为文件名
                 today = datetime.now().date().isoformat()
-                expected_file = os.path.join(
-                    os.getcwd(), 
-                    "Archive", 
-                    f"daily_{today}.csv"
-                )
-                
+                expected_file = os.path.join(os.getcwd(), "Archive", f"daily_{today}.csv")
+
                 if os.path.exists(expected_file):
-                    print(f"Archive completed: {response.json()['message']}")
-                    print(f"Archive file saved at: {expected_file}")
+                    logger.info(f"Daily archive completed successfully. File saved at: {expected_file}")
                     return True, expected_file
                 else:
-                    print("Warning: Archive completed but file not found")
+                    logger.warning("Daily archive completed, but file not found.")
                     return True, None
             else:
-                print(f"Archive failed: {response.json().get('detail', 'Unknown error')}")
+                logger.error(f"Daily archive failed. Response: {response.json().get('detail', 'Unknown error')}")
                 return False, None
-                
+
         except Exception as e:
-            print(f"Error during archive process: {str(e)}")
+            logger.exception(f"Exception during daily archive process: {str(e)}")
             return False, None
 
 # Create maintenance server instance

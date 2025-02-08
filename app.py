@@ -7,6 +7,9 @@ import asyncio
 from typing import Optional
 from enum import Enum
 
+from loggers import logger
+
+
 # 创建 FastAPI 应用
 app = FastAPI(title="Power Consumption Management System")
 
@@ -85,15 +88,16 @@ async def register_account(owner_name: str, address: str, meter_id: str):
     /register_account?owner_name=Adam&address=USA&meter_id=123-456-789
     ```
     """
+    logger.info(f"Received registration request for {meter_id}")
     if system_state.is_maintenance_mode:
-
+        logger.warning("Registration failed due to maintenance mode")
         raise HTTPException(status_code=503, detail="System is in maintenance mode")
-    if not system_state.is_receiving_data:
-        raise HTTPException(status_code=503, detail="System is not receiving data")
     try:
         meter_id = api_system.register_account(owner_name, address, meter_id)
+        logger.info(f"Account registered successfully: {meter_id}")
         return {"meter_id": meter_id, "message": "Account successfully created"}
     except ValueError as e:
+        logger.error(f"Registration error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/receive_meter_reading")
@@ -111,19 +115,14 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
     /receive_meter_reading?meter_id=123-456-789&timestamp=2025-02-08T01:00:00&reading=100.5
     ```
     """
-    if system_state.is_maintenance_mode:
-        raise HTTPException(status_code=503, detail="System is in maintenance mode")
-    if not system_state.is_receiving_data:
-        raise HTTPException(status_code=503, detail="System is not receiving data")
-    
-    # 验证时间戳是否在整点或半点
-    if timestamp.minute not in [0, 30] or timestamp.second != 0:
-        raise HTTPException(
-            status_code=400, 
-            detail="Timestamp must be on the hour (HH:00:00) or half hour (HH:30:00)"
-        )
-    
+    logger.info(f"Received meter reading request for meter ID: {meter_id} at timestamp: {timestamp}")
+
     success = api_system.record_meter_reading(meter_id, timestamp, reading)
+    if success:
+        logger.info(f"Meter reading successfully recorded for meter ID: {meter_id}")
+    else:
+        logger.error(f"Failed to record meter reading for meter ID: {meter_id}")
+
     return {
         "success": success,
         "message": "Reading recorded successfully" if success else "Failed to record reading"
@@ -143,47 +142,15 @@ async def get_consumption(meter_id: str, period: str):
     /get_consumption?meter_id=123-456-789&period=this_month
     ```
     """
-    if system_state.is_maintenance_mode:
-        raise HTTPException(status_code=503, detail="System is in maintenance mode")
+    logger.info(f"Received request to get consumption for meter ID: {meter_id}, period: {period}")
+
     consumption = api_system.get_consumption(meter_id, period)
     if consumption is None:
+        logger.error(f"Meter ID {meter_id} not found or invalid period: {period}")
         raise HTTPException(status_code=404, detail="Meter not found or invalid period")
-    return {
-        "consumption": consumption,
-        "period": period,
-        "meter_id": meter_id
-    }
 
-@app.get("/get_last_month_bill")
-async def get_last_month_bill(meter_id: str):
-    """
-    获取上月账单
-    
-    参数:
-    - meter_id: 电表ID
-    
-    返回:
-    - consumption: 上月用电量
-    - meter_id: 电表ID
-    - timestamp: 查询时间戳
-    
-    示例:
-    ```
-    /get_last_month_bill?meter_id=123-456-789
-    ```
-    """
-    if system_state.is_maintenance_mode:
-        raise HTTPException(status_code=503, detail="System is in maintenance mode")
-    
-    consumption = api_system.get_last_month_bill(meter_id)
-    if consumption is None:
-        raise HTTPException(status_code=404, detail="Meter not found")
-    
-    return {
-        "consumption": consumption,
-        "meter_id": meter_id,
-        "timestamp": datetime.now().isoformat()
-    }
+    logger.info(f"Consumption retrieved successfully for meter ID: {meter_id}, period: {period}")
+    return {"meter_id": meter_id, "period": period, "consumption": consumption}
 
 # 维护模式相关函数
 async def perform_daily_maintenance():
