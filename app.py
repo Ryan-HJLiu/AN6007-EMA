@@ -1,4 +1,4 @@
-import APIs
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, validator
 import uvicorn
@@ -7,23 +7,22 @@ import asyncio
 from typing import Optional
 from enum import Enum
 from restore import DataRestorer
-
+from APIs import APIs  # Import the APIs class directly
 from loggers import logger
 
-
-# 创建 FastAPI 应用
+# Create FastAPI application
 app = FastAPI(title="Power Consumption Management System")
 
-# 创建API实例
-api_system = APIs.ElectricityManagementSystem()
+# Create API instance
+api_system = APIs()  # Use the correct class name
 
-# 定义维护类型
+# Define maintenance types
 class MaintenanceType(str, Enum):
     DAILY = "daily"
     MONTHLY = "monthly"
     BOTH = "both"
 
-# 系统状态控制
+# System state control
 class SystemState:
     def __init__(self):
         self.is_maintenance_mode = False
@@ -94,20 +93,24 @@ class RestoreResponse(BaseModel):
 class ConsumptionResponse(BaseModel):
     meter_id: str
     period: str
+    start_reading: float
+    end_reading: float
     consumption: float
+    start_time: str
+    end_time: str
 
 # API endpoints
 @app.post("/register_account")
 async def register_account(owner_name: str, address: str, meter_id: str):
     """
-    注册新账户
+    Register new account
     
-    参数:
-    - owner_name: 用户名
-    - address: 地址
-    - meter_id: 电表ID
+    Parameters:
+    - owner_name: Owner name
+    - address: Address
+    - meter_id: Meter ID
     
-    示例:
+    Example:
     ```
     /register_account?owner_name=Adam&address=USA&meter_id=123-456-789
     ```
@@ -127,14 +130,14 @@ async def register_account(owner_name: str, address: str, meter_id: str):
 @app.post("/receive_meter_reading")
 async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: float):
     """
-    接收电表读数
+    Receive meter reading
     
-    参数:
-    - meter_id: 电表ID
-    - timestamp: 时间戳 (格式: YYYY-MM-DDTHH:mm:00, 必须是整点或半点)
-    - reading: 读数值
+    Parameters:
+    - meter_id: Meter ID
+    - timestamp: Timestamp (format: YYYY-MM-DDTHH:mm:00, must be on the hour or half hour)
+    - reading: Reading value
     
-    示例:
+    Example:
     ```
     /receive_meter_reading?meter_id=123-456-789&timestamp=2025-02-08T01:00:00&reading=100.5
     ```
@@ -155,22 +158,26 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
 @app.get("/get_consumption", response_model=ConsumptionResponse)
 async def get_consumption(meter_id: str, period: str):
     """
-    查询用电量
+    Query power consumption
     
-    参数:
-    - meter_id: 电表ID
-    - period: 查询周期 ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
+    Parameters:
+    - meter_id: Meter ID
+    - period: Query period ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
     
-    返回:
-    - meter_id: 电表ID
-    - period: 查询周期
-    - consumption: 用电量
+    Returns:
+    - meter_id: Meter ID
+    - period: Query period
+    - start_reading: First reading (kWh)
+    - end_reading: Last reading (kWh)
+    - consumption: Power consumption (kWh)
+    - start_time: First reading timestamp
+    - end_time: Last reading timestamp
     
-    错误:
-    - 400: 参数错误（无效的period）或数据不足
-    - 404: 电表ID不存在或指定时间段内无数据
+    Errors:
+    - 400: Parameter error (invalid period) or insufficient data
+    - 404: Meter ID not found or no data in specified period
     
-    示例:
+    Example:
     ```
     /get_consumption?meter_id=123-456-789&period=this_month
     ```
@@ -178,41 +185,41 @@ async def get_consumption(meter_id: str, period: str):
     logger.info(f"Received request to get consumption for meter ID: {meter_id}, period: {period}")
 
     try:
-        consumption = api_system.get_consumption(meter_id, period)
+        consumption_data = api_system.get_consumption(meter_id, period)
         logger.info(f"Consumption retrieved successfully for meter ID: {meter_id}, period: {period}")
         return ConsumptionResponse(
             meter_id=meter_id,
             period=period,
-            consumption=consumption
+            **consumption_data
         )
     except ValueError as e:
         error_msg = str(e)
         logger.error(f"Error getting consumption: {error_msg}")
         if "Meter ID" in error_msg:
-            # 电表ID不存在
+            # Meter ID not found
             raise HTTPException(status_code=404, detail=error_msg)
         elif "Invalid period" in error_msg:
-            # 无效的period参数
+            # Invalid period parameter
             raise HTTPException(status_code=400, detail=error_msg)
         elif "No readings found" in error_msg or "Insufficient readings" in error_msg:
-            # 指定时间段内无数据或数据不足
+            # No data or insufficient data in specified period
             raise HTTPException(status_code=404, detail=error_msg)
         else:
-            # 其他ValueError错误
+            # Other ValueError errors
             raise HTTPException(status_code=400, detail=error_msg)
     except FileNotFoundError as e:
-        # 找不到归档文件
+        # Archive file not found
         logger.error(f"Archive file not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        # 其他未预期的错误
+        # Other unexpected errors
         logger.error(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-# 维护模式相关函数
+# Maintenance related functions
 async def perform_daily_maintenance():
-    """执行每日维护任务"""
-    success = api_system.archive_readings("daily", clear_memory=False)  # 日度维护不清除内存
+    """Perform daily maintenance tasks"""
+    success = api_system.archive_readings("daily", clear_memory=False)  # Daily maintenance doesn't clear memory
     return MaintenanceResponse(
         success=success,
         message="Daily maintenance completed" if success else "Daily maintenance failed",
@@ -221,8 +228,8 @@ async def perform_daily_maintenance():
     )
 
 async def perform_monthly_maintenance(meter_id: str):
-    """执行月度维护任务"""
-    archive_success = api_system.archive_readings("monthly", clear_memory=True)  # 月度维护清除内存
+    """Perform monthly maintenance tasks"""
+    archive_success = api_system.archive_readings("monthly", clear_memory=True)  # Monthly maintenance clears memory
     current_month = api_system.get_consumption(meter_id, "this_month")
     last_month = api_system.get_last_month_bill(meter_id)
     
@@ -237,15 +244,15 @@ async def perform_monthly_maintenance(meter_id: str):
 @app.post("/maintenance/start", response_model=MaintenanceResponse)
 async def start_maintenance(maintenance_type: MaintenanceType):
     """
-    手动启动维护任务
+    Start maintenance task manually
     
-    参数:
-    - maintenance_type: 维护类型
-        - daily: 仅执行日度维护
-        - monthly: 仅执行月度维护
-        - both: 同时执行日度和月度维护
+    Parameters:
+    - maintenance_type: Maintenance type
+        - daily: Daily maintenance only
+        - monthly: Monthly maintenance only
+        - both: Both daily and monthly maintenance
     
-    示例:
+    Example:
     ```
     /maintenance/start?maintenance_type=daily
     ```
@@ -283,14 +290,14 @@ async def start_maintenance(maintenance_type: MaintenanceType):
 @app.get("/maintenance/status")
 async def get_maintenance_status():
     """
-    获取系统当前维护状态
+    Get current system maintenance status
     
-    返回:
-    - is_maintenance_mode: 是否处于维护模式
-    - is_receiving_data: 是否正在接收数据
-    - timestamp: 当前时间戳
+    Returns:
+    - is_maintenance_mode: Whether in maintenance mode
+    - is_receiving_data: Whether receiving data
+    - timestamp: Current timestamp
     
-    示例:
+    Example:
     ```
     /maintenance/status
     ```
@@ -304,18 +311,18 @@ async def get_maintenance_status():
 @app.post("/shutdown", response_model=SystemResponse)
 async def shutdown():
     """
-    停止系统接收数据
+    Stop system data reception
     
-    说明:
-    - 系统将停止接收新的电表读数
-    - 不影响数据查询功能
-    - 可以通过/resume恢复数据接收
+    Notes:
+    - System will stop receiving new meter readings
+    - Does not affect data query functionality
+    - Can resume data reception via /resume
     """
     if not system_state.is_receiving_data:
         raise HTTPException(status_code=400, detail="System is already shut down")
     
     system_state.is_receiving_data = False
-    api_system.shutdown_system()  # 同步API系统状态
+    api_system.shutdown_system()  # Sync API system status
     
     return SystemResponse(
         success=True,
@@ -327,17 +334,17 @@ async def shutdown():
 @app.post("/resume", response_model=SystemResponse)
 async def resume():
     """
-    恢复系统接收数据
+    Resume system data reception
     
-    说明:
-    - 系统将恢复接收新的电表读数
-    - 用于shutdown后的系统恢复
+    Notes:
+    - System will resume receiving new meter readings
+    - Used for system recovery after shutdown
     """
     if system_state.is_receiving_data:
         raise HTTPException(status_code=400, detail="System is already receiving data")
     
     system_state.is_receiving_data = True
-    api_system.resume_system()  # 同步API系统状态
+    api_system.resume_system()  # Sync API system status
     
     return SystemResponse(
         success=True,
@@ -349,20 +356,20 @@ async def resume():
 @app.get("/get_last_month_bill", response_model=BillingDetailsResponse)
 async def get_last_month_bill(meter_id: str):
     """
-    获取上月账单详情
+    Get last month's bill details
     
-    参数:
-    - meter_id: 电表ID
+    Parameters:
+    - meter_id: Meter ID
     
-    返回:
-    - period: 账单周期 (YYYY-MM)
-    - start_reading: 月初读数 (kWh)
-    - end_reading: 月末读数 (kWh)
-    - consumption: 总用电量 (kWh)
-    - start_time: 第一次读数时间
-    - end_time: 最后一次读数时间
+    Returns:
+    - period: Billing period (YYYY-MM)
+    - start_reading: First reading of the month (kWh)
+    - end_reading: Last reading of the month (kWh)
+    - consumption: Total power consumption (kWh)
+    - start_time: First reading timestamp
+    - end_time: Last reading timestamp
     
-    示例:
+    Example:
     ```
     /get_last_month_bill?meter_id=123-456-789
     ```
@@ -396,26 +403,26 @@ async def get_last_month_bill(meter_id: str):
 @app.post("/restore_data", response_model=RestoreResponse)
 async def restore_data():
     """
-    从Archive和日志文件恢复本月的meter readings数据
+    Restore meter readings data from Archive and logs
     
-    说明:
-    1. 从Archive目录恢复本月已归档的数据（从月初到昨天）
-    2. 从今天的日志文件恢复未归档的数据
-    3. 将恢复的数据加载到系统内存中
+    Notes:
+    1. Restore archived data from Archive directory (from month start to yesterday)
+    2. Restore unarchived data from today's log file
+    3. Load restored data into system memory
     
-    返回:
-    - success: 是否成功
-    - message: 处理结果信息
-    - timestamp: 处理时间
-    - restored_meters_count: 恢复的电表数量
-    - restored_readings_count: 恢复的读数记录总数
+    Returns:
+    - success: Whether successful
+    - message: Processing result message
+    - timestamp: Processing time
+    - restored_meters_count: Number of meters restored
+    - restored_readings_count: Total number of readings restored
     """
     try:
         logger.info("Starting data restoration process")
         restorer = DataRestorer()
         restored_data = restorer.restore_data()
         
-        # 更新系统中的数据
+        # Update system data
         total_readings = 0
         for meter_id, readings in restored_data.items():
             if meter_id in api_system.accounts:

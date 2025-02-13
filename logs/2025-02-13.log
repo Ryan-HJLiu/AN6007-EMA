@@ -1,0 +1,13 @@
+ERROR - 2025-02-13 12:13:16,808 - Invalid CSV headers in account.csv
+ERROR - 2025-02-13 12:15:56,660 - Invalid CSV headers in account.csv
+ERROR - 2025-02-13 12:15:56,666 - Invalid CSV headers in account.csv
+ERROR - 2025-02-13 12:16:54,337 - Invalid CSV headers in account.csv
+ERROR - 2025-02-13 12:16:54,345 - Invalid CSV headers in account.csv
+ERROR - 2025-02-13 12:17:42,615 - Invalid CSV headers in account.csv
+ERROR - 2025-02-13 12:17:42,628 - Invalid CSV headers in account.csv
+INFO - 2025-02-13 12:18:10,655 - Received registration request for 123-456-789
+INFO - 2025-02-13 12:18:10,659 - Accounts saved successfully
+INFO - 2025-02-13 12:18:10,660 - Account registered successfully: 123-456-789
+INFO - 2025-02-13 12:18:10,661 - Account registered successfully: 123-456-789
+INFO - 2025-02-13 12:18:32,687 - Received registration request for 123-456-789
+ERROR - 2025-02-13 12:18:32,688 - Registration error: Meter ID 123-456-789 already exists

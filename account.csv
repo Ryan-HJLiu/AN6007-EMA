@@ -1,4 +1,2 @@
-owner_name	address	meter_id
-AB	CD	123-456-789
-Q	W	999-999-999
-Q	A	123-456-788
+owner_name,address,meter_id
+Q,B,123-456-789

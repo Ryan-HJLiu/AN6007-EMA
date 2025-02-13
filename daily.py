@@ -12,8 +12,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
 import asyncio
-from typing import Optional
+from typing import Optional, Dict, List
 from loggers import logger
+import csv
 
 class MaintenanceResponse(BaseModel):
     success: bool
@@ -24,47 +25,119 @@ class MaintenanceResponse(BaseModel):
 # Create maintenance server application
 maintenance_app = FastAPI(title="Power Consumption Management System Maintenance Service")
 
-class DailyMaintenanceServer:
-    """Daily maintenance service for archiving meter readings and initializing new day"""
-
-    def __init__(self, main_api_url: str = "http://localhost:8000"):
-        self.main_api_url = main_api_url
-
-    async def archive_today_readings(self) -> tuple[bool, Optional[str]]:
+class DailyMaintenance:
+    """
+    Daily maintenance class for archiving meter readings
+    
+    Functionality:
+    1. Archive yesterday's meter readings to CSV files
+    2. Clear archived data from memory
+    """
+    
+    def __init__(self):
+        self.archive_dir = os.path.join("Archive")
+    
+    def _get_yesterday_readings(self, meter_readings: Dict[datetime, float]) -> Dict[datetime, float]:
         """
-        Archive previous day's meter readings to CSV
+        Get yesterday's readings from meter readings
+        
+        Parameters:
+        - meter_readings: Dictionary of timestamp-reading pairs
         
         Returns:
-            tuple: (success status, archive file path if successful)
+        - Dictionary of timestamp-reading pairs for yesterday
         """
-        logger.info("Starting daily archive process")
+        yesterday = (datetime.now() - timedelta(days=1)).date()
+        day_start = datetime.combine(yesterday, datetime.min.time())
+        day_end = day_start + timedelta(days=1)
+        
+        return {ts: reading for ts, reading in meter_readings.items() if day_start <= ts < day_end}
+    
+    def _create_archive_directory(self, year: int, month: int) -> None:
+        """
+        Create archive directory structure if not exists
+        
+        Parameters:
+        - year: Year
+        - month: Month
+        """
+        archive_path = os.path.join(self.archive_dir, f"{year:04d}", f"{month:02d}")
+        os.makedirs(archive_path, exist_ok=True)
+    
+    def _save_readings_to_csv(self, meter_id: str, readings: Dict[datetime, float]) -> None:
+        """
+        Save readings to CSV file
+        
+        Parameters:
+        - meter_id: Meter ID
+        - readings: Dictionary of timestamp-reading pairs
+        """
+        if not readings:
+            return
+        
+        # Get first timestamp to determine year and month
+        first_ts = min(readings.keys())
+        year = first_ts.year
+        month = first_ts.month
+        
+        # Create directory structure
+        self._create_archive_directory(year, month)
+        
+        # Save to CSV
+        archive_path = os.path.join(self.archive_dir, f"{year:04d}", f"{month:02d}", f"{meter_id}.csv")
+        
+        # Check if file exists and get existing readings
+        existing_readings = {}
+        if os.path.exists(archive_path):
+            with open(archive_path, "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    ts = datetime.fromisoformat(row["timestamp"])
+                    reading = float(row["reading"])
+                    existing_readings[ts] = reading
+        
+        # Merge with new readings
+        all_readings = {**existing_readings, **readings}
+        
+        # Write all readings to CSV
+        with open(archive_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["timestamp", "reading"])
+            writer.writeheader()
+            for ts in sorted(all_readings.keys()):
+                writer.writerow({
+                    "timestamp": ts.isoformat(),
+                    "reading": all_readings[ts]
+                })
+    
+    def perform_maintenance(self, accounts: Dict[str, object]) -> bool:
+        """
+        Perform daily maintenance
+        
+        Parameters:
+        - accounts: Dictionary of meter accounts
+        
+        Returns:
+        - Whether maintenance was successful
+        """
         try:
-            response = requests.post(
-                f"{self.main_api_url}/archive_and_prepare",
-                params={"period": "daily"}
-            )
-
-            if response.status_code == 200:
-                # 获取前一天的日期
-                yesterday = (datetime.now() - timedelta(days=1)).date().isoformat()
-                expected_file = os.path.join(os.getcwd(), "Archive", f"daily_{yesterday}.csv")
-
-                if os.path.exists(expected_file):
-                    logger.info(f"Daily archive completed successfully. File saved at: {expected_file}")
-                    return True, expected_file
-                else:
-                    logger.warning("Daily archive completed, but file not found.")
-                    return True, None
-            else:
-                logger.error(f"Daily archive failed. Response: {response.json().get('detail', 'Unknown error')}")
-                return False, None
-
+            for meter_id, account in accounts.items():
+                # Get yesterday's readings
+                yesterday_readings = self._get_yesterday_readings(account.meter_readings)
+                if yesterday_readings:
+                    # Save to archive
+                    self._save_readings_to_csv(meter_id, yesterday_readings)
+                    # Clear from memory
+                    for ts in yesterday_readings.keys():
+                        del account.meter_readings[ts]
+            
+            return True
+            
         except Exception as e:
-            logger.exception(f"Exception during daily archive process: {str(e)}")
-            return False, None
+            logger.error(f"Error during daily maintenance: {str(e)}")
+            return False
 
 # Create maintenance server instance
-daily_server = DailyMaintenanceServer()
+daily_server = DailyMaintenance()
 
 @maintenance_app.post("/perform_daily_maintenance", response_model=MaintenanceResponse)
 async def perform_daily_maintenance():

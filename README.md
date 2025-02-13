@@ -1,171 +1,241 @@
-# Power Consumption Management API System
+# Power Consumption Management System
 
-## Project Overview
-This system is a power consumption management API system developed for the Energy Market Authority (EMA) of Singapore. It provides comprehensive meter data collection, user account management, and consumption query functionality, built using the FastAPI framework for RESTful API services.
-
-## System Architecture
-- **Main API Server** (`app.py`): Core API endpoints and request handling
-- **API Implementation** (`APIs.py`): Business logic and data management
-- **Daily Maintenance** (`daily.py`): Daily data archiving service
-- **Monthly Maintenance** (`monthly.py`): Monthly billing and data archiving service
+## Overview
+A comprehensive power consumption management system that provides RESTful APIs for managing electricity meter readings, account registration, consumption queries, and system maintenance. The system is designed to handle half-hourly meter readings with efficient data archiving and recovery capabilities.
 
 ## Key Features
 
 ### 1. Account Management
-- Register new accounts with meter ID binding
-- Automatic meter ID validation
-- Account information storage and retrieval
+- Register new accounts with owner name, address, and meter ID
+- Validate meter ID uniqueness
+- Store account information in CSV format
+- Support for multiple accounts management
 
 ### 2. Meter Reading Collection
-- Receive readings at 30-minute intervals (HH:00:00 or HH:30:00)
-- Automatic timestamp validation and normalization
-- Real-time data validation (reading continuity check)
-- Support for CSV data export
+- Record half-hourly meter readings (HH:00:00 or HH:30:00)
+- Validate timestamp format and reading values
+- Real-time data validation
+- Automatic data archiving
 
-### 3. Consumption Queries
-- Last 30 minutes consumption
-- Daily consumption
-- Weekly consumption
-- Monthly consumption
-- Previous month consumption
-- Custom period queries
+### 3. Power Consumption Querying
+- Multiple query periods supported:
+  - Last 30 minutes
+  - Today
+  - This week
+  - This month
+  - Last month
+- Detailed consumption information:
+  - Start reading and timestamp
+  - End reading and timestamp
+  - Total consumption
+  - Period summary
 
-### 4. Data Archiving
-- Daily archiving (preserves memory data)
-- Monthly archiving (clears memory data)
-- Automated CSV file generation
-- Structured archive directory organization
+### 4. Monthly Billing
+- Automated monthly bill generation
+- Structured bill details:
+  - Billing period (YYYY-MM)
+  - Start and end readings
+  - Total consumption
+  - Reading timestamps
+- Historical bill data archiving
 
 ### 5. System Maintenance
-- Maintenance mode support
-- Data reception control
-- System shutdown/resume functionality
-- Automated error handling
+- Automated daily maintenance:
+  - Archive yesterday's readings
+  - Clear archived data from memory
+  - Maintain data integrity
+- Monthly maintenance:
+  - Archive last month's readings
+  - Generate monthly bills
+  - Clear old data from memory
+- System control:
+  - Maintenance mode support
+  - Data reception control
+  - System shutdown/resume capability
 
-## API Endpoints
+### 6. Data Recovery
+- Comprehensive data recovery functionality:
+  - Restore archived data from CSV files
+  - Recover current day's readings from logs
+  - Automatic data validation during recovery
+- Support for system recovery after failures
+
+## API Documentation
 
 ### Account Management
 ```
 POST /register_account
-Parameters:
-- owner_name: string
-- address: string
-- meter_id: string
+- Parameters:
+  - owner_name: Owner name (string)
+  - address: Address (string)
+  - meter_id: Meter ID (string)
+- Returns:
+  - meter_id: Registered meter ID
+  - message: Success message
 ```
 
 ### Meter Reading
 ```
 POST /receive_meter_reading
-Parameters:
-- meter_id: string
-- timestamp: datetime (YYYY-MM-DDTHH:mm:00)
-- reading: float
+- Parameters:
+  - meter_id: Meter ID (string)
+  - timestamp: Reading timestamp (YYYY-MM-DDTHH:mm:00)
+  - reading: Reading value (float)
+- Returns:
+  - success: Whether recording was successful
+  - message: Processing result message
 ```
 
-### Consumption Queries
+### Power Consumption
 ```
 GET /get_consumption
-Parameters:
-- meter_id: string
-- period: string (last_30min/today/this_week/this_month/last_month)
+- Parameters:
+  - meter_id: Meter ID (string)
+  - period: Query period ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
+- Returns:
+  - meter_id: Meter ID
+  - period: Query period
+  - start_reading: First reading (kWh)
+  - end_reading: Last reading (kWh)
+  - consumption: Total consumption (kWh)
+  - start_time: First reading timestamp
+  - end_time: Last reading timestamp
+```
 
+### Monthly Bill
+```
 GET /get_last_month_bill
-Parameters:
-- meter_id: string
+- Parameters:
+  - meter_id: Meter ID (string)
+- Returns:
+  - period: Billing period (YYYY-MM)
+  - start_reading: First reading (kWh)
+  - end_reading: Last reading (kWh)
+  - consumption: Total consumption (kWh)
+  - start_time: First reading timestamp
+  - end_time: Last reading timestamp
 ```
 
 ### System Maintenance
 ```
 POST /maintenance/start
-Parameters:
-- maintenance_type: string (daily/monthly/both)
-
-POST /shutdown
-POST /resume
+- Parameters:
+  - maintenance_type: Maintenance type ('daily', 'monthly', 'both')
+- Returns:
+  - success: Whether successful
+  - message: Processing result message
+  - timestamp: Processing time
+  - maintenance_type: Executed maintenance type
 
 GET /maintenance/status
+- Returns:
+  - is_maintenance_mode: Whether in maintenance mode
+  - is_receiving_data: Whether receiving data
+  - timestamp: Current timestamp
+
+POST /shutdown
+- Returns:
+  - success: Whether successful
+  - message: Processing result message
+  - timestamp: Processing time
+  - is_receiving_data: System status
+
+POST /resume
+- Returns:
+  - success: Whether successful
+  - message: Processing result message
+  - timestamp: Processing time
+  - is_receiving_data: System status
 ```
 
-## Data Storage
-- In-memory data structures for active readings
-- CSV file storage for archived data
-- Structured archive directory:
-  - Daily: `Archive/daily_YYYY-MM-DD.csv`
-  - Monthly: `Archive/monthly_YYYY-MM.csv`
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone [repository-url]
-cd power-consumption-management
+### Data Recovery
 ```
-
-2. Create a virtual environment (recommended):
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+POST /restore_data
+- Returns:
+  - success: Whether successful
+  - message: Processing result message
+  - timestamp: Processing time
+  - restored_meters_count: Number of meters restored
+  - restored_readings_count: Total number of readings restored
 ```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## Running the System
-
-1. Start the main API server:
-```bash
-uvicorn app:app --host localhost --port 8000 --reload
-```
-
-2. Start the daily maintenance service:
-```bash
-uvicorn daily:maintenance_app --host localhost --port 8001 --reload
-```
-
-3. Start the monthly maintenance service:
-```bash
-uvicorn monthly:maintenance_app --host localhost --port 8002 --reload
-```
-
-## API Documentation
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## Data Validation Rules
-1. Timestamp must be either:
-   - On the hour (HH:00:00)
-   - On the half hour (HH:30:00)
-2. Readings must be continuously increasing
-3. Meter IDs must be pre-registered
-4. All numeric values maintain decimal precision
-
-## Error Handling
-- Input validation errors (400)
-- Resource not found errors (404)
-- System maintenance errors (503)
-- Detailed error messages for debugging
-
-## Development Requirements
-- Python 3.8+
-- FastAPI
-- Uvicorn
-- Pydantic
-- Pandas
-- Requests
 
 ## Project Structure
 ```
-power-consumption-management/
-├── app.py              # Main API server
-├── APIs.py             # Core implementation
-├── daily.py            # Daily maintenance
-├── monthly.py          # Monthly maintenance
-├── requirements.txt    # Dependencies
-├── README.md          # Documentation
-└── Archive/           # Data archive directory
-    ├── daily_*.csv    # Daily archives
-    └── monthly_*.csv  # Monthly archives
-``` 
+.
+├── APIs.py              # Core API implementation and business logic
+├── app.py              # FastAPI application and endpoint definitions
+├── restore.py          # Data recovery implementation
+├── daily.py           # Daily maintenance service
+├── monthly.py         # Monthly maintenance service
+├── loggers.py         # Logging configuration
+├── account.csv        # Account information storage
+├── Archive/           # Archived data storage
+│   ├── YYYY/         # Year directory
+│   │   ├── MM/      # Month directory
+│   │   │   ├── meter_id.csv  # Archived readings by meter
+└── logs/             # System logs
+    └── YYYY-MM-DD.log  # Daily log files
+```
+
+## Technical Requirements
+- Python 3.8+
+- FastAPI framework
+- Uvicorn ASGI server
+- Pandas for data processing
+- Requests for HTTP client
+- Pydantic for data validation
+
+## Installation
+1. Clone the repository
+2. Create and activate a virtual environment (recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   venv\Scripts\activate     # Windows
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Running the System
+1. Start the main API server:
+   ```bash
+   uvicorn app:app --host 0.0.0.0 --port 8000
+   ```
+2. Access the API documentation:
+   - Swagger UI: http://localhost:8000/docs
+   - ReDoc: http://localhost:8000/redoc
+
+## Data Validation Rules
+1. Timestamp requirements:
+   - Must be on the hour (HH:00:00)
+   - Or on the half hour (HH:30:00)
+2. Meter readings:
+   - Must be numeric values
+   - Must be continuously increasing
+3. Meter IDs:
+   - Must be pre-registered
+   - Must be unique in the system
+
+## Error Handling
+- 400: Bad Request (Invalid input parameters)
+- 404: Not Found (Resource not found)
+- 500: Internal Server Error
+- 503: Service Unavailable (System in maintenance)
+
+## Logging
+- Comprehensive logging system
+- Daily log rotation
+- Separate logs for:
+  - API operations
+  - Maintenance tasks
+  - System events
+  - Error tracking
+
+## Security Considerations
+1. Input validation for all API endpoints
+2. Error message sanitization
+3. Rate limiting support
+4. Maintenance mode protection
+5. Data integrity checks 

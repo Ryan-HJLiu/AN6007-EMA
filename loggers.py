@@ -1,26 +1,29 @@
-import logging
 import os
+import logging
 from datetime import datetime
 
-# 创建logs目录
-logs_dir = os.path.join(os.getcwd(), 'logs')
-os.makedirs(logs_dir, exist_ok=True)
+# Create logs directory if not exists
+os.makedirs("logs", exist_ok=True)
 
-# 获取当前日期作为文件名
-current_date = datetime.now().strftime('%Y-%m-%d')
-log_file = os.path.join(logs_dir, f'system_logs_{current_date}.log')
+# Configure logger
+logger = logging.getLogger("power_consumption")
+logger.setLevel(logging.INFO)
 
-# 配置日志处理器
+# Create file handler
+today = datetime.now().date()
+log_file = os.path.join("logs", f"{today.isoformat()}.log")
 file_handler = logging.FileHandler(log_file)
 file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(
-    logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-)
 
-# 配置logger
-logger = logging.getLogger("PowerManagementSystem")
-logger.setLevel(logging.INFO)
+# Create console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Create formatter
+formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+# Add handlers to logger
 logger.addHandler(file_handler)
-
-# 防止日志重复
-logger.propagate = False
+logger.addHandler(console_handler)

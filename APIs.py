@@ -22,6 +22,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from loggers import logger
+import csv
 
 # Add response models
 class AccountResponse(BaseModel):
@@ -35,7 +36,11 @@ class MeterReadingResponse(BaseModel):
 class ConsumptionResponse(BaseModel):
     meter_id: str
     period: str
+    start_reading: float
+    end_reading: float
     consumption: float
+    start_time: str
+    end_time: str
 
 class BillingDetailsResponse(BaseModel):
     meter_id: str
@@ -53,395 +58,379 @@ class ArchiveResponse(BaseModel):
     message: str
     period: str
 
-class ElectricityAccount:
-    """Electricity Account class for storing and managing individual user's power consumption data"""
+class Account:
+    """
+    Account class for storing meter information and readings
     
-    def __init__(self, meter_id: str, owner_name: str, address: str):
-        self.meter_id = meter_id
+    Attributes:
+    - owner_name: Owner name
+    - address: Address
+    - meter_id: Meter ID
+    - meter_readings: Dictionary storing meter readings, key is timestamp, value is reading
+    """
+    def __init__(self, owner_name: str, address: str, meter_id: str):
         self.owner_name = owner_name
         self.address = address
-        self.family_members = []  # Store family member information
-        self.meter_readings = {}  # Store meter readings, format: {timestamp: reading}
-        self.created_at = datetime.now()
+        self.meter_id = meter_id
+        self.meter_readings: Dict[datetime, float] = {}
+
+class APIs:
+    """
+    Main API class for system functionality
     
-    def calculate_consumption(self, start_time: datetime, end_time: datetime) -> float:
-        """
-        Calculate power consumption for a specified time period
-        
-        Args:
-            start_time: Start time
-            end_time: End time
-            
-        Returns:
-            float: Power consumption during the time period (kWh)
-            
-        Raises:
-            ValueError: If no readings found or insufficient readings in the time period
-        """
-        logger.info(f"Calculating consumption for meter {self.meter_id} from {start_time} to {end_time}")
-        
-        # 获取时间范围内的读数
-        relevant_readings = {ts: reading for ts, reading in self.meter_readings.items() if start_time <= ts <= end_time}
-        
-        if not relevant_readings:
-            error_msg = f"No readings found for meter {self.meter_id} between {start_time} and {end_time}"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        timestamps = sorted(relevant_readings.keys())
-        if len(timestamps) < 2:
-            error_msg = (f"Insufficient readings for meter {self.meter_id} between {start_time} and {end_time}. "
-                        f"Found {len(timestamps)} reading(s), minimum 2 readings required.")
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        consumption = relevant_readings[timestamps[-1]] - relevant_readings[timestamps[0]]
-        logger.info(f"Calculated consumption for meter {self.meter_id}: {consumption} kWh")
-        return consumption
-
-class ElectricityManagementSystem:
-    """Main Electricity Management System class implementing core API functionality"""
-    
+    Attributes:
+    - accounts: Dictionary storing accounts, key is meter ID, value is Account object
+    - is_receiving_data: Whether system is receiving data
+    """
     def __init__(self):
-        self.accounts: Dict[str, ElectricityAccount] = {}
-        self.archived_readings: Dict[str, Dict[str, Dict[datetime, float]]] = {}
+        self.accounts: Dict[str, Account] = {}
         self.is_receiving_data = True
         self._load_accounts()
     
     def _load_accounts(self):
-        """从account.csv加载已有账户"""
+        """Load existing accounts from account.csv"""
+        if not os.path.exists("account.csv"):
+            # Create account.csv with headers if it doesn't exist
+            with open("account.csv", "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["owner_name", "address", "meter_id"])
+                writer.writeheader()
+            return
+        
         try:
-            account_file = os.path.join(os.getcwd(), "account.csv")
-            if os.path.exists(account_file):
-                df = pd.read_csv(account_file, sep='\t')
-                for _, row in df.iterrows():
-                    self.accounts[row['meter_id']] = ElectricityAccount(
-                        meter_id=row['meter_id'],
-                        owner_name=row['owner_name'],
-                        address=row['address']
-                    )
-                logger.info(f"Successfully loaded {len(df)} accounts from account.csv")
+            with open("account.csv", "r") as f:
+                reader = csv.DictReader(f)
+                if not reader.fieldnames or set(reader.fieldnames) != {"owner_name", "address", "meter_id"}:
+                    logger.error("Invalid CSV headers in account.csv")
+                    return
+                
+                for row in reader:
+                    try:
+                        account = Account(
+                            owner_name=row["owner_name"],
+                            address=row["address"],
+                            meter_id=row["meter_id"]
+                        )
+                        self.accounts[account.meter_id] = account
+                    except KeyError as e:
+                        logger.error(f"Missing field in account.csv: {str(e)}")
+                    except Exception as e:
+                        logger.error(f"Error processing account row: {str(e)}")
         except Exception as e:
-            logger.error(f"Error loading accounts from file: {str(e)}")
+            logger.error(f"Error loading accounts: {str(e)}")
+    
+    def _save_accounts(self):
+        """Save accounts to account.csv"""
+        try:
+            with open("account.csv", "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["owner_name", "address", "meter_id"])
+                writer.writeheader()
+                for account in self.accounts.values():
+                    writer.writerow({
+                        "owner_name": account.owner_name,
+                        "address": account.address,
+                        "meter_id": account.meter_id
+                    })
+            logger.info("Accounts saved successfully")
+        except Exception as e:
+            logger.error(f"Error saving accounts: {str(e)}")
             raise
     
     def register_account(self, owner_name: str, address: str, meter_id: str) -> str:
-        """注册新账户并保存到account.csv"""
-        logger.info(f"Attempting to register account: {owner_name}, {address}, {meter_id}")
+        """
+        Register new account and save to account.csv
         
-        account_file = os.path.join(os.getcwd(), "account.csv")
-        try:
-            if os.path.exists(account_file):
-                df = pd.read_csv(account_file, sep='\t')
-                if meter_id in df['meter_id'].values:
-                    error_msg = f"Meter ID {meter_id} already exists in account.csv"
-                    logger.warning(error_msg)
-                    raise ValueError(error_msg)
-            
-            # 创建新账户
-            self.accounts[meter_id] = ElectricityAccount(meter_id, owner_name, address)
-            
-            # 保存到account.csv
-            new_account = pd.DataFrame([{
-                'owner_name': owner_name,
-                'address': address,
-                'meter_id': meter_id
-            }])
-            
-            if os.path.exists(account_file):
-                new_account.to_csv(account_file, sep='\t', mode='a', header=False, index=False)
-            else:
-                new_account.to_csv(account_file, sep='\t', index=False)
-            
-            logger.info(f"Successfully registered account with meter ID: {meter_id}")
-            return meter_id
-            
-        except pd.errors.EmptyDataError:
-            new_account = pd.DataFrame([{
-                'owner_name': owner_name,
-                'address': address,
-                'meter_id': meter_id
-            }])
-            new_account.to_csv(account_file, sep='\t', index=False)
-            return meter_id
-            
-        except Exception as e:
-            logger.error(f"Error during account registration: {str(e)}")
-            raise
+        Parameters:
+        - owner_name: Owner name
+        - address: Address
+        - meter_id: Meter ID
+        
+        Returns:
+        - meter_id: Registered meter ID
+        
+        Raises:
+        - ValueError: If meter ID already exists
+        """
+        if meter_id in self.accounts:
+            raise ValueError(f"Meter ID {meter_id} already exists")
+        
+        account = Account(owner_name, address, meter_id)
+        self.accounts[meter_id] = account
+        self._save_accounts()
+        logger.info(f"Account registered successfully: {meter_id}")
+        
+        return meter_id
     
     def record_meter_reading(self, meter_id: str, timestamp: datetime, reading: float) -> bool:
         """
-        Record half-hourly meter reading
+        Record meter reading
         
-        Args:
-            meter_id: Meter ID
-            timestamp: Timestamp (must be on the hour, half-hour, or 23:59)
-            reading: Meter reading (kWh)
-            
+        Parameters:
+        - meter_id: Meter ID
+        - timestamp: Reading timestamp
+        - reading: Reading value
+        
         Returns:
-            bool: Whether the data was successfully recorded
-            
+        - bool: Whether recording was successful
+        
         Raises:
-            ValueError: If system is shutdown or other validation errors
+        - ValueError: If meter ID not found or timestamp invalid
         """
-        logger.info(f"Recording meter reading: meter_id={meter_id}, timestamp={timestamp}, reading={reading}")
-
-        # 首先检查系统状态
         if not self.is_receiving_data:
-            error_msg = "System is currently shutdown and not accepting new readings"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        # 然后检查meter_id是否存在
+            return False
+        
         if meter_id not in self.accounts:
-            error_msg = f"Meter ID {meter_id} not found. Unable to record reading."
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        # 最后检查时间戳格式
-        if not ((timestamp.minute == 0 or timestamp.minute == 30) and timestamp.second == 0):
-            error_msg = f"Invalid timestamp format for meter reading: {timestamp}. Must be on the hour (HH:00:00) or half hour (HH:30:00)"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        # 所有检查通过后，记录读数
-        account = self.accounts[meter_id]
-        account.meter_readings[timestamp] = reading
-        logger.info(f"Meter reading successfully recorded for meter ID: {meter_id}")
+            raise ValueError(f"Meter ID {meter_id} not found")
+        
+        # Validate timestamp is on the hour or half hour
+        if timestamp.minute not in [0, 30] or timestamp.second != 0:
+            raise ValueError("Timestamp must be on the hour or half hour")
+        
+        # Record reading
+        self.accounts[meter_id].meter_readings[timestamp] = reading
+        logger.info(f"Meter reading recorded successfully: {meter_id}, {timestamp}, {reading}")
         return True
-        
-    def shutdown_system(self):
-        """关闭系统数据接收"""
-        self.is_receiving_data = False
-        
-    def resume_system(self):
-        """恢复系统数据接收"""
-        self.is_receiving_data = True
-
-    def get_consumption(self, meter_id: str, period: str) -> Optional[float]:
+    
+    def get_consumption(self, meter_id: str, period: str) -> Dict:
         """
-        Query power consumption for specified period
+        Get power consumption for specified period
         
-        Args:
-            meter_id: Meter ID
-            period: Query period ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
-            
+        Parameters:
+        - meter_id: Meter ID
+        - period: Query period ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
+        
         Returns:
-            float: Total power consumption
-            
+        Dictionary containing:
+        - start_reading: First reading (kWh)
+        - end_reading: Last reading (kWh)
+        - consumption: Power consumption (kWh)
+        - start_time: First reading timestamp
+        - end_time: Last reading timestamp
+        
         Raises:
-            ValueError: If meter not found or invalid period
-            FileNotFoundError: If archive file not found for last_month query
+        - ValueError: If meter ID not found, invalid period, or insufficient data
         """
         if meter_id not in self.accounts:
             raise ValueError(f"Meter ID {meter_id} not found")
-            
-        account = self.accounts[meter_id]
+        
+        readings = self.accounts[meter_id].meter_readings
+        if not readings:
+            raise ValueError("No readings found for this meter")
+        
         now = datetime.now()
         
-        # Adjust current time to the nearest valid time point
-        if now.minute > 30:
-            now = now.replace(minute=30, second=0, microsecond=0)
-        elif now.minute > 0:
-            now = now.replace(minute=0, second=0, microsecond=0)
-        else:
-            now = now.replace(second=0, microsecond=0)
+        # Calculate time range based on period
+        if period == "last_30min":
+            end_time = now.replace(minute=30 if now.minute >= 30 else 0, second=0, microsecond=0)
+            if now.minute >= 30:
+                end_time = end_time.replace(hour=now.hour)
+            else:
+                end_time = end_time.replace(hour=now.hour-1 if now.hour > 0 else 23)
+            start_time = end_time - timedelta(minutes=30)
         
-        if period == 'last_month':
-            # 获取上个月的年月
-            first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            last_month = first_day_this_month - timedelta(days=1)
-            monthly_file = f"monthly_{last_month.strftime('%Y-%m')}.csv"
-            archive_path = os.path.join(os.getcwd(), "Archive", monthly_file)
-            
-            try:
-                if not os.path.exists(archive_path):
-                    logger.error(f"Monthly archive file not found: {archive_path}")
-                    raise FileNotFoundError(f"Archive file for {last_month.strftime('%Y-%m')} not found")
-                
-                df = pd.read_csv(archive_path)
-                # 过滤指定meter_id的数据
-                meter_data = df[df['meter_id'] == meter_id]
-                if meter_data.empty:
-                    logger.error(f"No data found for meter_id {meter_id} in archive file")
-                    raise ValueError(f"No data found for meter_id {meter_id} in {last_month.strftime('%Y-%m')}")
-                
-                # 将时间戳转换为datetime对象
-                meter_data['timestamp'] = pd.to_datetime(meter_data['timestamp'])
-                # 获取最大和最小读数的差值作为消耗量
-                consumption = meter_data['reading'].max() - meter_data['reading'].min()
-                return consumption
-                
-            except pd.errors.EmptyDataError:
-                logger.error(f"Archive file is empty: {archive_path}")
-                raise ValueError(f"Archive file for {last_month.strftime('%Y-%m')} is empty")
-            except pd.errors.ParserError as e:
-                logger.error(f"Error parsing archive file: {str(e)}")
-                raise ValueError(f"Error parsing archive file for {last_month.strftime('%Y-%m')}: {str(e)}")
-            except Exception as e:
-                logger.error(f"Unexpected error reading monthly archive file: {str(e)}")
-                raise
-        
-        elif period == 'last_30min':
-            start_time = now - timedelta(minutes=30)
-            end_time = now
-        elif period == 'today':
+        elif period == "today":
             start_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
             end_time = now
-        elif period == 'this_week':
-            start_time = now - timedelta(days=now.weekday())
-            start_time = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        elif period == "this_week":
+            start_time = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
             end_time = now
-        elif period == 'this_month':
+        
+        elif period == "this_month":
             start_time = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end_time = now
+        
+        elif period == "last_month":
+            # Get first day of current month
+            first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            # Get last day of previous month
+            end_time = first_day - timedelta(days=1)
+            # Get first day of previous month
+            start_time = end_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
         else:
-            raise ValueError(f"Invalid period: {period}. Must be one of: last_30min, today, this_week, this_month, last_month")
-            
-        try:
-            return account.calculate_consumption(start_time, end_time)
-        except ValueError as e:
-            # 重新抛出ValueError，保持原始错误信息
-            raise ValueError(str(e))
+            raise ValueError("Invalid period")
+        
+        # Filter readings within time range
+        period_readings = {ts: reading for ts, reading in readings.items() if start_time <= ts <= end_time}
+        
+        if not period_readings:
+            raise ValueError(f"No readings found for period {period}")
+        
+        if len(period_readings) < 2:
+            raise ValueError(f"Insufficient readings for period {period}")
+        
+        # Get first and last readings
+        sorted_times = sorted(period_readings.keys())
+        start_reading = period_readings[sorted_times[0]]
+        end_reading = period_readings[sorted_times[-1]]
+        
+        return {
+            "start_reading": start_reading,
+            "end_reading": end_reading,
+            "consumption": end_reading - start_reading,
+            "start_time": sorted_times[0].isoformat(),
+            "end_time": sorted_times[-1].isoformat()
+        }
     
     def get_last_month_bill(self, meter_id: str) -> Optional[Dict]:
         """
         Get last month's bill details
         
-        Args:
-            meter_id: Meter ID
-            
-        Returns:
-            Dict: Last month's bill details including:
-                - start_reading: Month's first reading
-                - end_reading: Month's last reading
-                - consumption: Total consumption in kWh
-                - period: Billing period (YYYY-MM)
-                
-        Raises:
-            FileNotFoundError: If archive file not found
-            ValueError: If no data found for meter_id or other validation errors
-        """
-        now = datetime.now()
-        first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        last_month = first_day_this_month - timedelta(days=1)
-        monthly_file = f"monthly_{last_month.strftime('%Y-%m')}.csv"
-        archive_path = os.path.join(os.getcwd(), "Archive", monthly_file)
+        Parameters:
+        - meter_id: Meter ID
         
+        Returns:
+        Dictionary containing:
+        - period: Billing period (YYYY-MM)
+        - start_reading: First reading of the month (kWh)
+        - end_reading: Last reading of the month (kWh)
+        - consumption: Total power consumption (kWh)
+        - start_time: First reading timestamp
+        - end_time: Last reading timestamp
+        
+        Returns None if meter ID not found
+        """
+        if meter_id not in self.accounts:
+            return None
+        
+        # Get last month's archive file path
+        now = datetime.now()
+        if now.month == 1:
+            year = now.year - 1
+            month = 12
+        else:
+            year = now.year
+            month = now.month - 1
+        
+        archive_path = os.path.join("Archive", f"{year:04d}", f"{month:02d}", f"{meter_id}.csv")
+        
+        if not os.path.exists(archive_path):
+            raise FileNotFoundError(f"Archive file not found for meter {meter_id} for {year:04d}-{month:02d}")
+        
+        # Read archive file
+        readings = {}
         try:
-            if not os.path.exists(archive_path):
-                logger.error(f"Monthly archive file not found: {archive_path}")
-                raise FileNotFoundError(f"Archive file for {last_month.strftime('%Y-%m')} not found")
+            with open(archive_path, "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    timestamp = datetime.fromisoformat(row["timestamp"])
+                    reading = float(row["reading"])
+                    readings[timestamp] = reading
             
-            df = pd.read_csv(archive_path)
-            meter_data = df[df['meter_id'] == meter_id]
+            if not readings:
+                raise ValueError(f"No readings found in archive for meter {meter_id}")
             
-            if meter_data.empty:
-                logger.error(f"No data found for meter_id {meter_id} in archive file")
-                raise ValueError(f"No data found for meter_id {meter_id} in {last_month.strftime('%Y-%m')}")
-            
-            # 将时间戳转换为datetime对象并排序
-            meter_data['timestamp'] = pd.to_datetime(meter_data['timestamp'])
-            meter_data = meter_data.sort_values('timestamp')
-            
-            # 获取月初和月末读数
-            start_reading = meter_data.iloc[0]['reading']
-            end_reading = meter_data.iloc[-1]['reading']
-            consumption = end_reading - start_reading
+            # Get first and last readings
+            sorted_times = sorted(readings.keys())
+            start_reading = readings[sorted_times[0]]
+            end_reading = readings[sorted_times[-1]]
             
             return {
-                "period": last_month.strftime('%Y-%m'),
+                "period": f"{year:04d}-{month:02d}",
                 "start_reading": start_reading,
                 "end_reading": end_reading,
-                "consumption": consumption,
-                "start_time": meter_data.iloc[0]['timestamp'].isoformat(),
-                "end_time": meter_data.iloc[-1]['timestamp'].isoformat()
+                "consumption": end_reading - start_reading,
+                "start_time": sorted_times[0].isoformat(),
+                "end_time": sorted_times[-1].isoformat()
             }
-            
-        except pd.errors.EmptyDataError:
-            logger.error(f"Archive file is empty: {archive_path}")
-            raise ValueError(f"Archive file for {last_month.strftime('%Y-%m')} is empty")
-        except pd.errors.ParserError as e:
-            logger.error(f"Error parsing archive file: {str(e)}")
-            raise ValueError(f"Error parsing archive file for {last_month.strftime('%Y-%m')}: {str(e)}")
         except Exception as e:
-            logger.error(f"Unexpected error reading monthly archive file: {str(e)}")
+            logger.error(f"Error reading archive file: {str(e)}")
             raise
+    
+    def shutdown_system(self):
+        """Stop system data reception"""
+        self.is_receiving_data = False
+        logger.info("System data reception stopped")
+    
+    def resume_system(self):
+        """Resume system data reception"""
+        self.is_receiving_data = True
+        logger.info("System data reception resumed")
 
     def archive_readings(self, period: str, clear_memory: bool = False) -> bool:
         """
-        Archive meter readings for specified period and prepare for new data
+        Archive meter readings for specified period
         
-        Args:
-            period: Archive period ('daily' or 'monthly')
-            clear_memory: Whether to clear the archived data from memory after saving
-            
+        Parameters:
+        - period: Archive period ('daily' or 'monthly')
+        - clear_memory: Whether to clear archived data from memory
+        
         Returns:
-            bool: Whether archiving was successful
+        - Whether archiving was successful
         """
-        logger.info(f"Archiving readings for period: {period}")
         try:
             now = datetime.now()
-            archive_dir = os.path.join(os.getcwd(), "Archive")
+            archive_dir = os.path.join("Archive")
             os.makedirs(archive_dir, exist_ok=True)
-
-            all_readings = []
+            
+            # Calculate time range based on period
+            if period == "daily":
+                yesterday = (now - timedelta(days=1)).date()
+                start_time = datetime.combine(yesterday, datetime.min.time())
+                end_time = start_time + timedelta(days=1)
+            elif period == "monthly":
+                first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                end_time = first_day_this_month
+                start_time = (end_time - timedelta(days=1)).replace(day=1)
+            else:
+                raise ValueError(f"Invalid period: {period}")
+            
+            # Create year/month directory structure
+            year_dir = os.path.join(archive_dir, f"{start_time.year:04d}")
+            month_dir = os.path.join(year_dir, f"{start_time.month:02d}")
+            os.makedirs(month_dir, exist_ok=True)
+            
+            # Archive readings for each meter
             for meter_id, account in self.accounts.items():
-                # 根据period类型设置不同的时间范围和文件名
-                if period == 'monthly':
-                    # 月度归档：获取上个月的年月
-                    first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                    last_month = first_day_this_month - timedelta(days=1)
-                    archive_key = last_month.strftime('%Y-%m')
-                    # 获取上个月的时间范围
-                    month_start = last_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                    month_end = first_day_this_month
-                else:
-                    # 日度归档：获取前一天的日期
-                    yesterday = (now - timedelta(days=1)).date()
-                    archive_key = yesterday.isoformat()
-                    # 获取前一天的时间范围
-                    day_start = datetime.combine(yesterday, datetime.min.time())
-                    day_end = datetime.combine(yesterday + timedelta(days=1), datetime.min.time())
-
-                filename = f"{period}_{archive_key}.csv"
+                # Get readings for the period
+                period_readings = {
+                    ts: reading 
+                    for ts, reading in account.meter_readings.items() 
+                    if start_time <= ts < end_time
+                }
                 
-                # 获取需要归档的读数
-                if period == 'monthly':
-                    period_readings = {ts: reading for ts, reading in account.meter_readings.items() 
-                                    if month_start <= ts < month_end}
-                else:
-                    period_readings = {ts: reading for ts, reading in account.meter_readings.items() 
-                                    if day_start <= ts < day_end}
-
                 if period_readings:
-                    for timestamp, reading in period_readings.items():
-                        all_readings.append({
-                            'meter_id': meter_id,
-                            'timestamp': timestamp,
-                            'reading': reading
-                        })
-
+                    # Save to CSV
+                    csv_path = os.path.join(month_dir, f"{meter_id}.csv")
+                    
+                    # Check if file exists and get existing readings
+                    existing_readings = {}
+                    if os.path.exists(csv_path):
+                        with open(csv_path, "r") as f:
+                            reader = csv.DictReader(f)
+                            for row in reader:
+                                ts = datetime.fromisoformat(row["timestamp"])
+                                reading = float(row["reading"])
+                                existing_readings[ts] = reading
+                    
+                    # Merge with new readings
+                    all_readings = {**existing_readings, **period_readings}
+                    
+                    # Write to CSV
+                    with open(csv_path, "w", newline="") as f:
+                        writer = csv.DictWriter(f, fieldnames=["timestamp", "reading"])
+                        writer.writeheader()
+                        for ts in sorted(all_readings.keys()):
+                            writer.writerow({
+                                "timestamp": ts.isoformat(),
+                                "reading": all_readings[ts]
+                            })
+                    
+                    # Clear from memory if requested
                     if clear_memory:
-                        logger.info(f"Clearing memory for archived readings of meter ID: {meter_id}")
                         for ts in period_readings.keys():
                             del account.meter_readings[ts]
-
-            if all_readings:
-                df = pd.DataFrame(all_readings)
-                df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%dT%H:%M:%S')
-                csv_path = os.path.join(archive_dir, filename)
-                df.to_csv(csv_path, index=False)
-                logger.info(f"Archived data saved to {csv_path}")
-
+            
+            logger.info(f"Successfully archived {period} readings")
             return True
+            
         except Exception as e:
-            logger.exception(f"Error during archiving process: {str(e)}")
+            logger.error(f"Error during {period} archiving: {str(e)}")
             return False
 
 # Create FastAPI application
 app = FastAPI(title="Power Consumption Management API System")
-ems = ElectricityManagementSystem()
+ems = APIs()
 
 @app.post("/register_account", response_model=AccountResponse)
 async def register_account(owner_name: str, region: str, meter_id: str):
@@ -501,7 +490,7 @@ async def get_consumption(meter_id: str, period: str):
         return ConsumptionResponse(
             meter_id=meter_id,
             period=period,
-            consumption=consumption
+            **consumption
         )
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=400, detail=str(e))
