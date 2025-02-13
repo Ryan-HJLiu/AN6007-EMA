@@ -1,0 +1,36 @@
+2025-02-12 10:19:08,394 - PowerManagementSystem - INFO - Received registration request for 999-999-999
+2025-02-12 10:19:08,397 - PowerManagementSystem - INFO - Attempting to register account: QW, C, 999-999-999
+2025-02-12 10:19:08,397 - PowerManagementSystem - INFO - Successfully registered account with meter ID: 999-999-999
+2025-02-12 10:19:08,398 - PowerManagementSystem - INFO - Account registered successfully: 999-999-999
+2025-02-12 10:19:58,001 - PowerManagementSystem - INFO - Received meter reading request for meter ID: 999-999-999 at timestamp: 2025-02-08 01:00:00
+2025-02-12 10:19:58,002 - PowerManagementSystem - INFO - Recording meter reading: meter_id=999-999-999, timestamp=2025-02-08 01:00:00, reading=100.5
+2025-02-12 10:19:58,002 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 999-999-999
+2025-02-12 10:19:58,002 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 999-999-999
+2025-02-12 19:44:26,698 - PowerManagementSystem - INFO - Received registration request for 999-999-999
+2025-02-12 19:44:26,703 - PowerManagementSystem - INFO - Attempting to register account: QW, C, 999-999-999
+2025-02-12 19:44:26,703 - PowerManagementSystem - INFO - Successfully registered account with meter ID: 999-999-999
+2025-02-12 19:44:26,703 - PowerManagementSystem - INFO - Account registered successfully: 999-999-999
+2025-02-12 19:45:06,006 - PowerManagementSystem - INFO - Received meter reading request for meter ID: 999-999-999 at timestamp: 2025-02-12 01:00:00
+2025-02-12 19:45:06,006 - PowerManagementSystem - INFO - Recording meter reading: meter_id=999-999-999, timestamp=2025-02-12 01:00:00, reading=100.5
+2025-02-12 19:45:06,006 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 999-999-999
+2025-02-12 19:45:06,006 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 999-999-999
+2025-02-12 19:45:19,525 - PowerManagementSystem - INFO - Received request to get consumption for meter ID: 999-999-999, period: today
+2025-02-12 19:45:19,525 - PowerManagementSystem - INFO - Calculating consumption for meter 999-999-999 from 2025-02-12 00:00:00 to 2025-02-12 19:30:00
+2025-02-12 19:45:19,525 - PowerManagementSystem - WARNING - Insufficient readings to calculate consumption for meter 999-999-999.
+2025-02-12 19:45:19,525 - PowerManagementSystem - INFO - Consumption retrieved successfully for meter ID: 999-999-999, period: today
+2025-02-12 19:45:27,903 - PowerManagementSystem - INFO - Received meter reading request for meter ID: 999-999-999 at timestamp: 2025-02-12 02:00:00
+2025-02-12 19:45:27,903 - PowerManagementSystem - INFO - Recording meter reading: meter_id=999-999-999, timestamp=2025-02-12 02:00:00, reading=102.5
+2025-02-12 19:45:27,903 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 999-999-999
+2025-02-12 19:45:27,903 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 999-999-999
+2025-02-12 19:45:30,040 - PowerManagementSystem - INFO - Received request to get consumption for meter ID: 999-999-999, period: today
+2025-02-12 19:45:30,040 - PowerManagementSystem - INFO - Calculating consumption for meter 999-999-999 from 2025-02-12 00:00:00 to 2025-02-12 19:30:00
+2025-02-12 19:45:30,040 - PowerManagementSystem - INFO - Calculated consumption for meter 999-999-999: 2.0 kWh
+2025-02-12 19:45:30,040 - PowerManagementSystem - INFO - Consumption retrieved successfully for meter ID: 999-999-999, period: today
+2025-02-12 19:45:39,853 - PowerManagementSystem - INFO - Archiving readings for period: daily
+2025-02-12 19:45:39,857 - PowerManagementSystem - INFO - Archived data saved to D:\OneDrive\南洋理工\MSBA-T2\AN6007 - ADVANCED PROGRAMMING\Group Project\Archive\daily_2025-02-12.csv
+2025-02-12 19:45:40,776 - PowerManagementSystem - INFO - Archiving readings for period: daily
+2025-02-12 19:45:40,776 - PowerManagementSystem - INFO - Archived data saved to D:\OneDrive\南洋理工\MSBA-T2\AN6007 - ADVANCED PROGRAMMING\Group Project\Archive\daily_2025-02-12.csv
+2025-02-12 19:50:27,450 - PowerManagementSystem - INFO - Received request to get consumption for meter ID: 999-999-999, period: last_month
+2025-02-12 19:50:27,451 - PowerManagementSystem - INFO - Calculating consumption for meter 999-999-999 from 2025-01-01 00:00:00 to 2025-02-01 00:00:00
+2025-02-12 19:50:27,451 - PowerManagementSystem - WARNING - No readings found for meter 999-999-999 within the time range.
+2025-02-12 19:50:27,451 - PowerManagementSystem - INFO - Consumption retrieved successfully for meter ID: 999-999-999, period: last_month

@@ -72,6 +72,17 @@ class BillingResponse(BaseModel):
     current_month_consumption: Optional[float] = None
     last_month_consumption: Optional[float] = None
 
+class BillingDetailsResponse(BaseModel):
+    meter_id: str
+    period: str
+    start_reading: float
+    end_reading: float
+    consumption: float
+    start_time: str
+    end_time: str
+    success: bool = True
+    message: str = "Bill details retrieved successfully"
+
 # API endpoints
 @app.post("/register_account")
 async def register_account(owner_name: str, address: str, meter_id: str):
@@ -117,16 +128,16 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
     """
     logger.info(f"Received meter reading request for meter ID: {meter_id} at timestamp: {timestamp}")
 
-    success = api_system.record_meter_reading(meter_id, timestamp, reading)
-    if success:
+    try:
+        success = api_system.record_meter_reading(meter_id, timestamp, reading)
         logger.info(f"Meter reading successfully recorded for meter ID: {meter_id}")
-    else:
-        logger.error(f"Failed to record meter reading for meter ID: {meter_id}")
-
-    return {
-        "success": success,
-        "message": "Reading recorded successfully" if success else "Failed to record reading"
-    }
+        return {
+            "success": success,
+            "message": "Reading recorded successfully" if success else "Failed to record reading"
+        }
+    except ValueError as e:
+        logger.error(f"Failed to record meter reading: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/get_consumption")
 async def get_consumption(meter_id: str, period: str):
@@ -258,6 +269,8 @@ async def shutdown():
         raise HTTPException(status_code=400, detail="System is already shut down")
     
     system_state.is_receiving_data = False
+    api_system.shutdown_system()  # 同步API系统状态
+    
     return SystemResponse(
         success=True,
         message="System stopped receiving data",
@@ -278,12 +291,61 @@ async def resume():
         raise HTTPException(status_code=400, detail="System is already receiving data")
     
     system_state.is_receiving_data = True
+    api_system.resume_system()  # 同步API系统状态
+    
     return SystemResponse(
         success=True,
         message="System resumed receiving data",
         timestamp=datetime.now().isoformat(),
         is_receiving_data=True
     )
+
+@app.get("/get_last_month_bill", response_model=BillingDetailsResponse)
+async def get_last_month_bill(meter_id: str):
+    """
+    获取上月账单详情
+    
+    参数:
+    - meter_id: 电表ID
+    
+    返回:
+    - period: 账单周期 (YYYY-MM)
+    - start_reading: 月初读数 (kWh)
+    - end_reading: 月末读数 (kWh)
+    - consumption: 总用电量 (kWh)
+    - start_time: 第一次读数时间
+    - end_time: 最后一次读数时间
+    
+    示例:
+    ```
+    /get_last_month_bill?meter_id=123-456-789
+    ```
+    """
+    logger.info(f"Received request to get last month's bill for meter ID: {meter_id}")
+    
+    try:
+        bill_details = api_system.get_last_month_bill(meter_id)
+        if bill_details is None:
+            logger.error(f"Meter ID {meter_id} not found")
+            raise HTTPException(status_code=404, detail="Meter not found")
+            
+        response = {
+            "meter_id": meter_id,
+            **bill_details
+        }
+        
+        logger.info(f"Bill details retrieved successfully for meter ID: {meter_id}")
+        return response
+        
+    except FileNotFoundError as e:
+        logger.error(f"Archive file not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        logger.error(f"Error retrieving bill details: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)

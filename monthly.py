@@ -9,7 +9,7 @@ Functions:
 2. Clear memory for the new month
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
@@ -34,7 +34,7 @@ class MonthlyMaintenanceServer:
     
     async def archive_month_readings(self) -> tuple[bool, Optional[str]]:
         """
-        Archive current month's meter readings to CSV
+        Archive last month's meter readings to CSV
         
         Returns:
             tuple: (success status, archive file path if successful)
@@ -47,8 +47,10 @@ class MonthlyMaintenanceServer:
             )
 
             if response.status_code == 200:
-                current_month = datetime.now().strftime('%Y-%m')
-                expected_file = os.path.join(os.getcwd(), "Archive", f"monthly_{current_month}.csv")
+                # 获取上个月的年月，格式为YYYY-MM
+                first_day_this_month = datetime.now().replace(day=1)
+                last_month = (first_day_this_month - timedelta(days=1)).strftime('%Y-%m')
+                expected_file = os.path.join(os.getcwd(), "Archive", f"monthly_{last_month}.csv")
 
                 if os.path.exists(expected_file):
                     logger.info(f"Monthly archive completed successfully. File saved at: {expected_file}")

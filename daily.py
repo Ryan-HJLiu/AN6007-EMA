@@ -6,7 +6,7 @@ Implementation:
 2. Clear memory for the new day
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -32,7 +32,7 @@ class DailyMaintenanceServer:
 
     async def archive_today_readings(self) -> tuple[bool, Optional[str]]:
         """
-        Archive current day's meter readings to CSV
+        Archive previous day's meter readings to CSV
         
         Returns:
             tuple: (success status, archive file path if successful)
@@ -45,8 +45,9 @@ class DailyMaintenanceServer:
             )
 
             if response.status_code == 200:
-                today = datetime.now().date().isoformat()
-                expected_file = os.path.join(os.getcwd(), "Archive", f"daily_{today}.csv")
+                # 获取前一天的日期
+                yesterday = (datetime.now() - timedelta(days=1)).date().isoformat()
+                expected_file = os.path.join(os.getcwd(), "Archive", f"daily_{yesterday}.csv")
 
                 if os.path.exists(expected_file):
                     logger.info(f"Daily archive completed successfully. File saved at: {expected_file}")
