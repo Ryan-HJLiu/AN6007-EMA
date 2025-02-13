@@ -36,6 +36,7 @@ class DailyMaintenance:
     
     def __init__(self):
         self.archive_dir = os.path.join("Archive")
+        os.makedirs(self.archive_dir, exist_ok=True)
     
     def _get_yesterday_readings(self, meter_readings: Dict[datetime, float]) -> Dict[datetime, float]:
         """
@@ -53,62 +54,6 @@ class DailyMaintenance:
         
         return {ts: reading for ts, reading in meter_readings.items() if day_start <= ts < day_end}
     
-    def _create_archive_directory(self, year: int, month: int) -> None:
-        """
-        Create archive directory structure if not exists
-        
-        Parameters:
-        - year: Year
-        - month: Month
-        """
-        archive_path = os.path.join(self.archive_dir, f"{year:04d}", f"{month:02d}")
-        os.makedirs(archive_path, exist_ok=True)
-    
-    def _save_readings_to_csv(self, meter_id: str, readings: Dict[datetime, float]) -> None:
-        """
-        Save readings to CSV file
-        
-        Parameters:
-        - meter_id: Meter ID
-        - readings: Dictionary of timestamp-reading pairs
-        """
-        if not readings:
-            return
-        
-        # Get first timestamp to determine year and month
-        first_ts = min(readings.keys())
-        year = first_ts.year
-        month = first_ts.month
-        
-        # Create directory structure
-        self._create_archive_directory(year, month)
-        
-        # Save to CSV
-        archive_path = os.path.join(self.archive_dir, f"{year:04d}", f"{month:02d}", f"{meter_id}.csv")
-        
-        # Check if file exists and get existing readings
-        existing_readings = {}
-        if os.path.exists(archive_path):
-            with open(archive_path, "r") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    ts = datetime.fromisoformat(row["timestamp"])
-                    reading = float(row["reading"])
-                    existing_readings[ts] = reading
-        
-        # Merge with new readings
-        all_readings = {**existing_readings, **readings}
-        
-        # Write all readings to CSV
-        with open(archive_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=["timestamp", "reading"])
-            writer.writeheader()
-            for ts in sorted(all_readings.keys()):
-                writer.writerow({
-                    "timestamp": ts.isoformat(),
-                    "reading": all_readings[ts]
-                })
-    
     def perform_maintenance(self, accounts: Dict[str, object]) -> bool:
         """
         Perform daily maintenance
@@ -120,15 +65,37 @@ class DailyMaintenance:
         - Whether maintenance was successful
         """
         try:
+            # Get yesterday's date for file naming
+            yesterday = (datetime.now() - timedelta(days=1)).date()
+            archive_file = os.path.join(self.archive_dir, f"daily_{yesterday.isoformat()}.csv")
+            
+            # Collect all readings
+            all_readings = []
             for meter_id, account in accounts.items():
                 # Get yesterday's readings
                 yesterday_readings = self._get_yesterday_readings(account.meter_readings)
-                if yesterday_readings:
-                    # Save to archive
-                    self._save_readings_to_csv(meter_id, yesterday_readings)
+                
+                # Add to collection
+                for ts, reading in yesterday_readings.items():
+                    all_readings.append({
+                        "meter_id": meter_id,
+                        "timestamp": ts.isoformat(),
+                        "reading": reading
+                    })
+                    
                     # Clear from memory
-                    for ts in yesterday_readings.keys():
-                        del account.meter_readings[ts]
+                    del account.meter_readings[ts]
+            
+            # Save to CSV if we have readings
+            if all_readings:
+                with open(archive_file, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=["meter_id", "timestamp", "reading"])
+                    writer.writeheader()
+                    writer.writerows(all_readings)
+                
+                logger.info(f"Successfully archived {len(all_readings)} readings to {archive_file}")
+            else:
+                logger.info("No readings found for yesterday")
             
             return True
             
@@ -142,12 +109,12 @@ daily_server = DailyMaintenance()
 @maintenance_app.post("/perform_daily_maintenance", response_model=MaintenanceResponse)
 async def perform_daily_maintenance():
     """
-    执行每日维护任务:
-    1. 将当日的电表读数保存为CSV文件
-    2. 清理内存中的当日数据
+    Perform daily maintenance tasks:
+    1. Archive today's meter readings to CSV files
+    2. Clear memory for the new day
     
-    CSV文件将保存在 ./Archive 目录下
-    文件命名格式: daily_YYYY-MM-DD.csv
+    CSV files will be saved in the ./Archive directory
+    File naming format: daily_YYYY-MM-DD.csv
     """
     try:
         success, archive_path = await daily_server.archive_today_readings()

@@ -302,23 +302,24 @@ class APIs:
             year = now.year
             month = now.month - 1
         
-        archive_path = os.path.join("Archive", f"{year:04d}", f"{month:02d}", f"{meter_id}.csv")
+        archive_file = os.path.join("Archive", f"monthly_{year:04d}-{month:02d}.csv")
         
-        if not os.path.exists(archive_path):
-            raise FileNotFoundError(f"Archive file not found for meter {meter_id} for {year:04d}-{month:02d}")
+        if not os.path.exists(archive_file):
+            raise FileNotFoundError(f"Archive file not found: monthly_{year:04d}-{month:02d}.csv")
         
         # Read archive file
         readings = {}
         try:
-            with open(archive_path, "r") as f:
+            with open(archive_file, "r") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    timestamp = datetime.fromisoformat(row["timestamp"])
-                    reading = float(row["reading"])
-                    readings[timestamp] = reading
+                    if row["meter_id"] == meter_id:  # Only process rows for this meter
+                        timestamp = datetime.fromisoformat(row["timestamp"])
+                        reading = float(row["reading"])
+                        readings[timestamp] = reading
             
             if not readings:
-                raise ValueError(f"No readings found in archive for meter {meter_id}")
+                raise ValueError(f"No readings found for meter {meter_id} in monthly_{year:04d}-{month:02d}.csv")
             
             # Get first and last readings
             sorted_times = sorted(readings.keys())
@@ -368,19 +369,17 @@ class APIs:
                 yesterday = (now - timedelta(days=1)).date()
                 start_time = datetime.combine(yesterday, datetime.min.time())
                 end_time = start_time + timedelta(days=1)
+                archive_file = os.path.join(archive_dir, f"daily_{yesterday.isoformat()}.csv")
             elif period == "monthly":
                 first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 end_time = first_day_this_month
                 start_time = (end_time - timedelta(days=1)).replace(day=1)
+                archive_file = os.path.join(archive_dir, f"monthly_{start_time.year:04d}-{start_time.month:02d}.csv")
             else:
                 raise ValueError(f"Invalid period: {period}")
             
-            # Create year/month directory structure
-            year_dir = os.path.join(archive_dir, f"{start_time.year:04d}")
-            month_dir = os.path.join(year_dir, f"{start_time.month:02d}")
-            os.makedirs(month_dir, exist_ok=True)
-            
             # Archive readings for each meter
+            all_readings = []
             for meter_id, account in self.accounts.items():
                 # Get readings for the period
                 period_readings = {
@@ -390,36 +389,25 @@ class APIs:
                 }
                 
                 if period_readings:
-                    # Save to CSV
-                    csv_path = os.path.join(month_dir, f"{meter_id}.csv")
-                    
-                    # Check if file exists and get existing readings
-                    existing_readings = {}
-                    if os.path.exists(csv_path):
-                        with open(csv_path, "r") as f:
-                            reader = csv.DictReader(f)
-                            for row in reader:
-                                ts = datetime.fromisoformat(row["timestamp"])
-                                reading = float(row["reading"])
-                                existing_readings[ts] = reading
-                    
-                    # Merge with new readings
-                    all_readings = {**existing_readings, **period_readings}
-                    
-                    # Write to CSV
-                    with open(csv_path, "w", newline="") as f:
-                        writer = csv.DictWriter(f, fieldnames=["timestamp", "reading"])
-                        writer.writeheader()
-                        for ts in sorted(all_readings.keys()):
-                            writer.writerow({
-                                "timestamp": ts.isoformat(),
-                                "reading": all_readings[ts]
-                            })
+                    # Add to collection
+                    for ts, reading in period_readings.items():
+                        all_readings.append({
+                            "meter_id": meter_id,
+                            "timestamp": ts.isoformat(),
+                            "reading": reading
+                        })
                     
                     # Clear from memory if requested
                     if clear_memory:
                         for ts in period_readings.keys():
                             del account.meter_readings[ts]
+            
+            # Save to CSV if we have readings
+            if all_readings:
+                with open(archive_file, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=["meter_id", "timestamp", "reading"])
+                    writer.writeheader()
+                    writer.writerows(all_readings)
             
             logger.info(f"Successfully archived {period} readings")
             return True
@@ -443,14 +431,14 @@ async def register_account(owner_name: str, region: str, meter_id: str):
 @app.post("/receive_meter_reading", response_model=MeterReadingResponse)
 async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: float):
     """
-    接收电表读数
+    Receive Meter Reading
     
-    参数:
-    - meter_id: 电表ID
-    - timestamp: 时间戳 (格式: YYYY-MM-DDTHH:mm:00, 必须是整点或半点)
-    - reading: 读数值
+    Parameters:
+    - meter_id: Meter ID
+    - timestamp: Timestamp (format: YYYY-MM-DDTHH:mm:00, must be on the hour or half hour)
+    - reading: Reading value
     
-    示例:
+    Example:
     ```
     /receive_meter_reading?meter_id=123-456-789&timestamp=2025-02-08T01:00:00&reading=100.5
     ```
@@ -472,13 +460,13 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
 @app.get("/get_consumption", response_model=ConsumptionResponse)
 async def get_consumption(meter_id: str, period: str):
     """
-    查询用电量
+    Query power consumption for specified period
     
-    参数:
-    - meter_id: 电表ID
-    - period: 查询周期 ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
+    Parameters:
+    - meter_id: Meter ID
+    - period: Query period ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
     
-    示例:
+    Example:
     ```
     /get_consumption?meter_id=123-456-789&period=this_month
     ```
@@ -498,20 +486,20 @@ async def get_consumption(meter_id: str, period: str):
 @app.get("/get_last_month_bill", response_model=BillingDetailsResponse)
 async def get_last_month_bill(meter_id: str):
     """
-    获取上月账单详情
+    Get last month's bill details
     
-    参数:
-    - meter_id: 电表ID
+    Parameters:
+    - meter_id: Meter ID
     
-    返回:
-    - period: 账单周期 (YYYY-MM)
-    - start_reading: 月初读数 (kWh)
-    - end_reading: 月末读数 (kWh)
-    - consumption: 总用电量 (kWh)
-    - start_time: 第一次读数时间
-    - end_time: 最后一次读数时间
+    Returns:
+    - period: Billing period (YYYY-MM)
+    - start_reading: Initial reading (kWh)
+    - end_reading: Final reading (kWh)
+    - consumption: Total power consumption (kWh)
+    - start_time: First reading timestamp
+    - end_time: Last reading timestamp
     
-    示例:
+    Example:
     ```
     /get_last_month_bill?meter_id=123-456-789
     ```
@@ -532,12 +520,12 @@ async def get_last_month_bill(meter_id: str):
 @app.post("/archive_and_prepare", response_model=ArchiveResponse)
 async def archive_and_prepare(period: str):
     """
-    归档指定周期的读数数据
+    Archive readings for specified period
     
-    参数:
-    - period: 归档周期 ('daily' or 'monthly')
+    Parameters:
+    - period: Archive period ('daily' or 'monthly')
     
-    示例:
+    Example:
     ```
     /archive_and_prepare?period=daily
     ```

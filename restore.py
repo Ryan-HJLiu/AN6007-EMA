@@ -38,16 +38,21 @@ class DataRestorer:
         year = now.year
         month = now.month
         
-        archive_dir = os.path.join(self.archive_dir, f"{year:04d}", f"{month:02d}")
-        if not os.path.exists(archive_dir):
-            return []
-        
+        # Get all daily files in Archive directory
         daily_files = []
-        for file in os.listdir(archive_dir):
-            if file.endswith(".csv"):
-                daily_files.append(os.path.join(archive_dir, file))
+        for file in os.listdir(self.archive_dir):
+            if file.startswith("daily_") and file.endswith(".csv"):
+                # Extract date from filename
+                try:
+                    date_str = file[6:-4]  # Remove 'daily_' prefix and '.csv' suffix
+                    file_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    # Check if file is from current month
+                    if file_date.year == year and file_date.month == month:
+                        daily_files.append(os.path.join(self.archive_dir, file))
+                except ValueError:
+                    continue
         
-        return daily_files
+        return sorted(daily_files)  # Sort files by date
     
     def _parse_log_line(self, line: str) -> Tuple[str, datetime, float]:
         """
@@ -60,19 +65,21 @@ class DataRestorer:
         - Tuple of (meter_id, timestamp, reading)
         
         Example log line:
-        INFO - 2024-02-13 03:05:00,123 - Meter reading successfully recorded for meter ID: 123-456-789, timestamp: 2024-02-13T03:00:00, reading: 100.5
+        Meter reading recorded successfully: 123-456-789, 2025-02-13 05:00:00, 4.0
         """
         # Extract meter ID, timestamp and reading using regex
-        pattern = r"Meter reading successfully recorded for meter ID: ([\w-]+), timestamp: ([\d-]+T[\d:]+), reading: ([\d.]+)"
+        pattern = r"Meter reading recorded successfully: ([\w-]+), ([\d-]+ [\d:]+), ([\d.]+)"
         match = re.search(pattern, line)
         if not match:
             return None
         
-        meter_id = match.group(1)
-        timestamp = datetime.fromisoformat(match.group(2))
-        reading = float(match.group(3))
-        
-        return meter_id, timestamp, reading
+        try:
+            meter_id = match.group(1)
+            timestamp = datetime.strptime(match.group(2), "%Y-%m-%d %H:%M:%S")
+            reading = float(match.group(3))
+            return meter_id, timestamp, reading
+        except (ValueError, IndexError):
+            return None
     
     def _get_today_readings_from_logs(self) -> Dict[str, Dict[datetime, float]]:
         """

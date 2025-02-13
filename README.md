@@ -41,11 +41,11 @@ A comprehensive power consumption management system that provides RESTful APIs f
 
 ### 5. System Maintenance
 - Automated daily maintenance:
-  - Archive yesterday's readings
+  - Archive yesterday's readings to daily_YYYY-MM-DD.csv
   - Clear archived data from memory
   - Maintain data integrity
 - Monthly maintenance:
-  - Archive last month's readings
+  - Archive last month's readings to monthly_YYYY-MM.csv
   - Generate monthly bills
   - Clear old data from memory
 - System control:
@@ -55,10 +55,10 @@ A comprehensive power consumption management system that provides RESTful APIs f
 
 ### 6. Data Recovery
 - Comprehensive data recovery functionality:
-  - Restore archived data from CSV files
+  - Restore current month's data from daily CSV files in Archive
   - Recover current day's readings from logs
-  - Automatic data validation during recovery
-- Support for system recovery after failures
+  - Automatic recovery on system startup
+  - Support for system recovery after failures
 
 ## API Documentation
 
@@ -165,16 +165,15 @@ POST /restore_data
 ├── APIs.py              # Core API implementation and business logic
 ├── app.py              # FastAPI application and endpoint definitions
 ├── restore.py          # Data recovery implementation
-├── daily.py           # Daily maintenance service
-├── monthly.py         # Monthly maintenance service
-├── loggers.py         # Logging configuration
-├── account.csv        # Account information storage
-├── Archive/           # Archived data storage
-│   ├── YYYY/         # Year directory
-│   │   ├── MM/      # Month directory
-│   │   │   ├── meter_id.csv  # Archived readings by meter
-└── logs/             # System logs
-    └── YYYY-MM-DD.log  # Daily log files
+├── daily.py            # Daily maintenance service
+├── monthly.py          # Monthly maintenance service
+├── loggers.py          # Logging configuration
+├── account.csv         # Account information storage
+├── Archive/            # Archived data storage
+│   ├── daily_YYYY-MM-DD.csv    # Daily archived readings
+│   └── monthly_YYYY-MM.csv     # Monthly archived readings
+└── logs/              # System logs
+    └── YYYY-MM-DD.log # Daily log files
 ```
 
 ## Technical Requirements
@@ -182,8 +181,9 @@ POST /restore_data
 - FastAPI framework
 - Uvicorn ASGI server
 - Pandas for data processing
-- Requests for HTTP client
 - Pydantic for data validation
+- Testing tools (pytest, httpx)
+- Development tools (black, flake8, isort)
 
 ## Installation
 1. Clone the repository
@@ -238,4 +238,28 @@ POST /restore_data
 2. Error message sanitization
 3. Rate limiting support
 4. Maintenance mode protection
-5. Data integrity checks 
+5. Data integrity checks
+
+## Data Recovery Process
+1. Automatic recovery on system startup
+2. Recovery sources:
+   - Daily CSV files from Archive (current month's data)
+   - Current day's log file
+3. Recovery validation:
+   - Timestamp validation
+   - Reading value validation
+   - Data consistency checks
+
+## Testing
+1. Unit tests with pytest
+2. API integration tests with httpx
+3. Data validation tests
+4. Recovery process tests
+5. Error handling tests
+
+## Development Guidelines
+1. Code formatting with black
+2. Import sorting with isort
+3. Code linting with flake8
+4. Type hints usage
+5. Comprehensive documentation 

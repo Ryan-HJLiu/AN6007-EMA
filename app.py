@@ -16,6 +16,29 @@ app = FastAPI(title="Power Consumption Management System")
 # Create API instance
 api_system = APIs()  # Use the correct class name
 
+# Restore data on startup
+@app.on_event("startup")
+async def startup_event():
+    """Restore data from Archive and logs on application startup"""
+    try:
+        logger.info("Starting application, attempting to restore data...")
+        restorer = DataRestorer()
+        restored_data = restorer.restore_data()
+        
+        # Update system data
+        restored_meters = 0
+        restored_readings = 0
+        for meter_id, readings in restored_data.items():
+            if meter_id in api_system.accounts:
+                api_system.accounts[meter_id].meter_readings.update(readings)
+                restored_meters += 1
+                restored_readings += len(readings)
+        
+        logger.info(f"Successfully restored {restored_readings} readings for {restored_meters} meters")
+    except Exception as e:
+        logger.error(f"Error during data restoration: {str(e)}")
+        # Don't raise the exception - allow the application to start even if restoration fails
+
 # Define maintenance types
 class MaintenanceType(str, Enum):
     DAILY = "daily"
@@ -38,7 +61,7 @@ class MeterReadingRequest(BaseModel):
 
     @validator('timestamp')
     def validate_timestamp(cls, v):
-        # 验证时间戳是否在整点或半点
+        # Validate if the timestamp is on the hour or half hour
         if v.minute not in [0, 30] or v.second != 0:
             raise ValueError("Timestamp must be on the hour (HH:00:00) or half hour (HH:30:00)")
         return v
@@ -241,6 +264,50 @@ async def perform_monthly_maintenance(meter_id: str):
         last_month_consumption=last_month
     )
 
+@app.post("/shutdown", response_model=SystemResponse)
+async def shutdown():
+    """
+    Stop system data reception
+    
+    Notes:
+    - System will stop receiving new meter readings
+    - Does not affect data query functionality
+    - Can resume data reception via /resume
+    """
+    if not system_state.is_receiving_data:
+        raise HTTPException(status_code=400, detail="System is already shut down")
+    
+    system_state.is_receiving_data = False
+    api_system.shutdown_system()  # Sync API system status
+    
+    return SystemResponse(
+        success=True,
+        message="System stopped receiving data",
+        timestamp=datetime.now().isoformat(),
+        is_receiving_data=False
+    )
+
+@app.get("/maintenance/status")
+async def get_maintenance_status():
+    """
+    Get current system maintenance status
+    
+    Returns:
+    - is_maintenance_mode: Whether in maintenance mode
+    - is_receiving_data: Whether receiving data
+    - timestamp: Current timestamp
+    
+    Example:
+    ```
+    /maintenance/status
+    ```
+    """
+    return {
+        "is_maintenance_mode": system_state.is_maintenance_mode,
+        "is_receiving_data": system_state.is_receiving_data,
+        "timestamp": datetime.now().isoformat()
+    }
+
 @app.post("/maintenance/start", response_model=MaintenanceResponse)
 async def start_maintenance(maintenance_type: MaintenanceType):
     """
@@ -286,50 +353,6 @@ async def start_maintenance(maintenance_type: MaintenanceType):
     
     finally:
         system_state.is_maintenance_mode = False
-
-@app.get("/maintenance/status")
-async def get_maintenance_status():
-    """
-    Get current system maintenance status
-    
-    Returns:
-    - is_maintenance_mode: Whether in maintenance mode
-    - is_receiving_data: Whether receiving data
-    - timestamp: Current timestamp
-    
-    Example:
-    ```
-    /maintenance/status
-    ```
-    """
-    return {
-        "is_maintenance_mode": system_state.is_maintenance_mode,
-        "is_receiving_data": system_state.is_receiving_data,
-        "timestamp": datetime.now().isoformat()
-    }
-
-@app.post("/shutdown", response_model=SystemResponse)
-async def shutdown():
-    """
-    Stop system data reception
-    
-    Notes:
-    - System will stop receiving new meter readings
-    - Does not affect data query functionality
-    - Can resume data reception via /resume
-    """
-    if not system_state.is_receiving_data:
-        raise HTTPException(status_code=400, detail="System is already shut down")
-    
-    system_state.is_receiving_data = False
-    api_system.shutdown_system()  # Sync API system status
-    
-    return SystemResponse(
-        success=True,
-        message="System stopped receiving data",
-        timestamp=datetime.now().isoformat(),
-        is_receiving_data=False
-    )
 
 @app.post("/resume", response_model=SystemResponse)
 async def resume():

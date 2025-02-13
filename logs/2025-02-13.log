@@ -11,3 +11,97 @@ INFO - 2025-02-13 12:18:10,660 - Account registered successfully: 123-456-789
 INFO - 2025-02-13 12:18:10,661 - Account registered successfully: 123-456-789
 INFO - 2025-02-13 12:18:32,687 - Received registration request for 123-456-789
 ERROR - 2025-02-13 12:18:32,688 - Registration error: Meter ID 123-456-789 already exists
+INFO - 2025-02-13 20:52:55,326 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-01-01 01:00:00
+INFO - 2025-02-13 20:52:55,328 - Meter reading recorded successfully: 123-456-789, 2025-01-01 01:00:00, 0.05
+INFO - 2025-02-13 20:52:55,329 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 20:53:06,373 - System data reception stopped
+INFO - 2025-02-13 20:53:11,526 - Successfully archived monthly readings
+INFO - 2025-02-13 20:54:38,452 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-01-02 01:30:00
+INFO - 2025-02-13 20:54:38,453 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 20:54:46,799 - System data reception resumed
+INFO - 2025-02-13 20:54:49,344 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-01-02 01:30:00
+INFO - 2025-02-13 20:54:49,344 - Meter reading recorded successfully: 123-456-789, 2025-01-02 01:30:00, 0.09
+INFO - 2025-02-13 20:54:49,345 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 20:55:03,842 - Received request to get consumption for meter ID: 123-456-789, period: last_month
+ERROR - 2025-02-13 20:55:03,843 - Error getting consumption: Insufficient readings for period last_month
+INFO - 2025-02-13 21:23:41,518 - Received registration request for 999-999-999
+INFO - 2025-02-13 21:23:41,527 - Accounts saved successfully
+INFO - 2025-02-13 21:23:41,530 - Account registered successfully: 999-999-999
+INFO - 2025-02-13 21:23:41,531 - Account registered successfully: 999-999-999
+INFO - 2025-02-13 21:23:42,702 - Received registration request for 999-999-999
+ERROR - 2025-02-13 21:23:42,703 - Registration error: Meter ID 999-999-999 already exists
+INFO - 2025-02-13 21:24:16,223 - Received registration request for 999-999-999
+ERROR - 2025-02-13 21:24:16,224 - Registration error: Meter ID 999-999-999 already exists
+INFO - 2025-02-13 21:24:28,895 - Received registration request for 999-999-999
+ERROR - 2025-02-13 21:24:28,896 - Registration error: Meter ID 999-999-999 already exists
+INFO - 2025-02-13 21:25:50,249 - Received registration request for 999-999-999
+INFO - 2025-02-13 21:25:50,257 - Accounts saved successfully
+INFO - 2025-02-13 21:25:50,258 - Account registered successfully: 999-999-999
+INFO - 2025-02-13 21:25:50,258 - Account registered successfully: 999-999-999
+INFO - 2025-02-13 21:26:33,053 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-01-01 01:00:00
+INFO - 2025-02-13 21:26:33,054 - Meter reading recorded successfully: 123-456-789, 2025-01-01 01:00:00, 0.05
+INFO - 2025-02-13 21:26:33,055 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:26:59,540 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-01-02 01:30:00
+INFO - 2025-02-13 21:26:59,542 - Meter reading recorded successfully: 123-456-789, 2025-01-02 01:30:00, 0.09
+INFO - 2025-02-13 21:26:59,542 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:27:18,947 - Received request to get consumption for meter ID: 123-456-789, period: last_month
+INFO - 2025-02-13 21:27:18,948 - Consumption retrieved successfully for meter ID: 123-456-789, period: last_month
+INFO - 2025-02-13 21:27:29,864 - System data reception stopped
+INFO - 2025-02-13 21:27:45,480 - Successfully archived monthly readings
+INFO - 2025-02-13 21:32:22,072 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-01-01 01:00:00
+INFO - 2025-02-13 21:32:22,075 - Meter reading recorded successfully: 123-456-789, 2025-01-01 01:00:00, 0.05
+INFO - 2025-02-13 21:32:22,075 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:32:27,407 - System data reception stopped
+INFO - 2025-02-13 21:32:38,762 - Successfully archived monthly readings
+INFO - 2025-02-13 21:32:46,056 - Successfully archived monthly readings
+INFO - 2025-02-13 21:33:13,240 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-02-12 01:00:00
+INFO - 2025-02-13 21:33:13,241 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:33:20,192 - System data reception resumed
+INFO - 2025-02-13 21:33:23,952 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-02-12 01:00:00
+INFO - 2025-02-13 21:33:23,953 - Meter reading recorded successfully: 123-456-789, 2025-02-12 01:00:00, 0.05
+INFO - 2025-02-13 21:33:23,953 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:33:28,475 - System data reception stopped
+INFO - 2025-02-13 21:33:32,458 - Successfully archived daily readings
+INFO - 2025-02-13 21:36:16,448 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-01-01 01:00:00
+INFO - 2025-02-13 21:36:16,451 - Meter reading recorded successfully: 123-456-789, 2025-01-01 01:00:00, 0.05
+INFO - 2025-02-13 21:36:16,452 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:36:25,658 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-02-12 01:00:00
+INFO - 2025-02-13 21:36:25,659 - Meter reading recorded successfully: 123-456-789, 2025-02-12 01:00:00, 0.05
+INFO - 2025-02-13 21:36:25,660 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:37:03,705 - Received request to get consumption for meter ID: 123-456-789, period: last_month
+ERROR - 2025-02-13 21:37:03,706 - Error getting consumption: Insufficient readings for period last_month
+INFO - 2025-02-13 21:37:12,681 - Received request to get consumption for meter ID: 123-456-789, period: today
+ERROR - 2025-02-13 21:37:12,683 - Error getting consumption: No readings found for period today
+INFO - 2025-02-13 21:37:19,014 - System data reception stopped
+INFO - 2025-02-13 21:37:25,195 - Successfully archived daily readings
+INFO - 2025-02-13 21:37:56,815 - Successfully archived monthly readings
+INFO - 2025-02-13 21:38:25,373 - System data reception resumed
+INFO - 2025-02-13 21:38:50,632 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-02-12 02:00:00
+INFO - 2025-02-13 21:38:50,633 - Meter reading recorded successfully: 123-456-789, 2025-02-12 02:00:00, 1.0
+INFO - 2025-02-13 21:38:50,633 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:38:55,085 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-02-13 02:00:00
+INFO - 2025-02-13 21:38:55,086 - Meter reading recorded successfully: 123-456-789, 2025-02-13 02:00:00, 2.0
+INFO - 2025-02-13 21:38:55,087 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:39:01,449 - Received meter reading request for meter ID: 123-456-789 at timestamp: 2025-02-13 05:00:00
+INFO - 2025-02-13 21:39:01,450 - Meter reading recorded successfully: 123-456-789, 2025-02-13 05:00:00, 4.0
+INFO - 2025-02-13 21:39:01,451 - Meter reading successfully recorded for meter ID: 123-456-789
+INFO - 2025-02-13 21:40:23,600 - System data reception stopped
+INFO - 2025-02-13 21:40:30,854 - Successfully archived daily readings
+INFO - 2025-02-13 21:41:26,652 - Starting data restoration process
+INFO - 2025-02-13 21:41:26,656 - Starting data restoration process
+INFO - 2025-02-13 21:41:26,659 - Restored 0 meter(s) data
+INFO - 2025-02-13 21:41:26,660 - Successfully restored 0 meters and 0 readings
+INFO - 2025-02-13 21:41:52,517 - Received request to get consumption for meter ID: 123-456-789, period: today
+ERROR - 2025-02-13 21:41:52,518 - Error getting consumption: No readings found for this meter
+INFO - 2025-02-13 21:41:56,952 - Starting data restoration process
+INFO - 2025-02-13 21:41:56,953 - Starting data restoration process
+INFO - 2025-02-13 21:41:56,954 - Restored 0 meter(s) data
+INFO - 2025-02-13 21:41:56,955 - Successfully restored 0 meters and 0 readings
+INFO - 2025-02-13 21:53:47,780 - Starting application, attempting to restore data...
+INFO - 2025-02-13 21:53:47,787 - Starting data restoration process
+INFO - 2025-02-13 21:53:47,790 - Restored 1 meter(s) data
+INFO - 2025-02-13 21:53:47,790 - Successfully restored 5 readings for 1 meters
+INFO - 2025-02-13 21:53:55,027 - Starting data restoration process
+INFO - 2025-02-13 21:53:55,029 - Starting data restoration process
+INFO - 2025-02-13 21:53:55,035 - Restored 1 meter(s) data
+INFO - 2025-02-13 21:53:55,035 - Successfully restored 1 meters and 5 readings
