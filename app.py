@@ -6,6 +6,7 @@ from datetime import datetime
 import asyncio
 from typing import Optional
 from enum import Enum
+from restore import DataRestorer
 
 from loggers import logger
 
@@ -83,6 +84,18 @@ class BillingDetailsResponse(BaseModel):
     success: bool = True
     message: str = "Bill details retrieved successfully"
 
+class RestoreResponse(BaseModel):
+    success: bool
+    message: str
+    timestamp: str
+    restored_meters_count: int
+    restored_readings_count: int
+
+class ConsumptionResponse(BaseModel):
+    meter_id: str
+    period: str
+    consumption: float
+
 # API endpoints
 @app.post("/register_account")
 async def register_account(owner_name: str, address: str, meter_id: str):
@@ -139,7 +152,7 @@ async def receive_meter_reading(meter_id: str, timestamp: datetime, reading: flo
         logger.error(f"Failed to record meter reading: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/get_consumption")
+@app.get("/get_consumption", response_model=ConsumptionResponse)
 async def get_consumption(meter_id: str, period: str):
     """
     查询用电量
@@ -148,6 +161,15 @@ async def get_consumption(meter_id: str, period: str):
     - meter_id: 电表ID
     - period: 查询周期 ('last_30min', 'today', 'this_week', 'this_month', 'last_month')
     
+    返回:
+    - meter_id: 电表ID
+    - period: 查询周期
+    - consumption: 用电量
+    
+    错误:
+    - 400: 参数错误（无效的period）或数据不足
+    - 404: 电表ID不存在或指定时间段内无数据
+    
     示例:
     ```
     /get_consumption?meter_id=123-456-789&period=this_month
@@ -155,13 +177,37 @@ async def get_consumption(meter_id: str, period: str):
     """
     logger.info(f"Received request to get consumption for meter ID: {meter_id}, period: {period}")
 
-    consumption = api_system.get_consumption(meter_id, period)
-    if consumption is None:
-        logger.error(f"Meter ID {meter_id} not found or invalid period: {period}")
-        raise HTTPException(status_code=404, detail="Meter not found or invalid period")
-
-    logger.info(f"Consumption retrieved successfully for meter ID: {meter_id}, period: {period}")
-    return {"meter_id": meter_id, "period": period, "consumption": consumption}
+    try:
+        consumption = api_system.get_consumption(meter_id, period)
+        logger.info(f"Consumption retrieved successfully for meter ID: {meter_id}, period: {period}")
+        return ConsumptionResponse(
+            meter_id=meter_id,
+            period=period,
+            consumption=consumption
+        )
+    except ValueError as e:
+        error_msg = str(e)
+        logger.error(f"Error getting consumption: {error_msg}")
+        if "Meter ID" in error_msg:
+            # 电表ID不存在
+            raise HTTPException(status_code=404, detail=error_msg)
+        elif "Invalid period" in error_msg:
+            # 无效的period参数
+            raise HTTPException(status_code=400, detail=error_msg)
+        elif "No readings found" in error_msg or "Insufficient readings" in error_msg:
+            # 指定时间段内无数据或数据不足
+            raise HTTPException(status_code=404, detail=error_msg)
+        else:
+            # 其他ValueError错误
+            raise HTTPException(status_code=400, detail=error_msg)
+    except FileNotFoundError as e:
+        # 找不到归档文件
+        logger.error(f"Archive file not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        # 其他未预期的错误
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # 维护模式相关函数
 async def perform_daily_maintenance():
@@ -346,6 +392,50 @@ async def get_last_month_bill(meter_id: str):
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/restore_data", response_model=RestoreResponse)
+async def restore_data():
+    """
+    从Archive和日志文件恢复本月的meter readings数据
+    
+    说明:
+    1. 从Archive目录恢复本月已归档的数据（从月初到昨天）
+    2. 从今天的日志文件恢复未归档的数据
+    3. 将恢复的数据加载到系统内存中
+    
+    返回:
+    - success: 是否成功
+    - message: 处理结果信息
+    - timestamp: 处理时间
+    - restored_meters_count: 恢复的电表数量
+    - restored_readings_count: 恢复的读数记录总数
+    """
+    try:
+        logger.info("Starting data restoration process")
+        restorer = DataRestorer()
+        restored_data = restorer.restore_data()
+        
+        # 更新系统中的数据
+        total_readings = 0
+        for meter_id, readings in restored_data.items():
+            if meter_id in api_system.accounts:
+                api_system.accounts[meter_id].meter_readings.update(readings)
+                total_readings += len(readings)
+        
+        logger.info(f"Successfully restored {len(restored_data)} meters and {total_readings} readings")
+        return RestoreResponse(
+            success=True,
+            message="Data restored successfully",
+            timestamp=datetime.now().isoformat(),
+            restored_meters_count=len(restored_data),
+            restored_readings_count=total_readings
+        )
+    except Exception as e:
+        logger.error(f"Error during data restoration: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Data restoration failed: {str(e)}"
+        )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)

@@ -50,3 +50,44 @@
 2025-02-13 11:04:54,052 - PowerManagementSystem - INFO - Successfully loaded 2 accounts from account.csv
 2025-02-13 11:04:57,630 - PowerManagementSystem - INFO - Successfully loaded 2 accounts from account.csv
 2025-02-13 11:04:57,640 - PowerManagementSystem - INFO - Successfully loaded 2 accounts from account.csv
+2025-02-13 11:19:28,396 - PowerManagementSystem - INFO - Successfully loaded 2 accounts from account.csv
+2025-02-13 11:19:28,414 - PowerManagementSystem - INFO - Successfully loaded 2 accounts from account.csv
+2025-02-13 11:24:59,478 - PowerManagementSystem - INFO - Received registration request for 123-456-789
+2025-02-13 11:24:59,483 - PowerManagementSystem - INFO - Attempting to register account: Q, A, 123-456-789
+2025-02-13 11:24:59,491 - PowerManagementSystem - WARNING - Meter ID 123-456-789 already exists in account.csv
+2025-02-13 11:24:59,492 - PowerManagementSystem - ERROR - Error during account registration: Meter ID 123-456-789 already exists in account.csv
+2025-02-13 11:24:59,492 - PowerManagementSystem - ERROR - Registration error: Meter ID 123-456-789 already exists in account.csv
+2025-02-13 11:25:04,702 - PowerManagementSystem - INFO - Received registration request for 123-456-788
+2025-02-13 11:25:04,703 - PowerManagementSystem - INFO - Attempting to register account: Q, A, 123-456-788
+2025-02-13 11:25:04,727 - PowerManagementSystem - INFO - Successfully registered account with meter ID: 123-456-788
+2025-02-13 11:25:04,728 - PowerManagementSystem - INFO - Account registered successfully: 123-456-788
+2025-02-13 11:25:27,553 - PowerManagementSystem - INFO - Received meter reading request for meter ID: 123-456-788 at timestamp: 2025-02-13 01:00:00
+2025-02-13 11:25:27,554 - PowerManagementSystem - INFO - Recording meter reading: meter_id=123-456-788, timestamp=2025-02-13 01:00:00, reading=100.5
+2025-02-13 11:25:27,555 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:25:27,555 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:25:40,869 - PowerManagementSystem - INFO - Received meter reading request for meter ID: 123-456-788 at timestamp: 2025-02-13 02:00:00
+2025-02-13 11:25:40,869 - PowerManagementSystem - INFO - Recording meter reading: meter_id=123-456-788, timestamp=2025-02-13 02:00:00, reading=102.5
+2025-02-13 11:25:40,869 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:25:40,869 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:25:52,097 - PowerManagementSystem - INFO - Received request to get consumption for meter ID: 123-456-788, period: today
+2025-02-13 11:25:52,097 - PowerManagementSystem - INFO - Calculating consumption for meter 123-456-788 from 2025-02-13 00:00:00 to 2025-02-13 11:00:00
+2025-02-13 11:25:52,097 - PowerManagementSystem - INFO - Calculated consumption for meter 123-456-788: 2.0 kWh
+2025-02-13 11:25:52,097 - PowerManagementSystem - INFO - Consumption retrieved successfully for meter ID: 123-456-788, period: today
+2025-02-13 11:25:57,817 - PowerManagementSystem - INFO - Received request to get consumption for meter ID: 123-456-788, period: today
+2025-02-13 11:25:57,817 - PowerManagementSystem - INFO - Calculating consumption for meter 123-456-788 from 2025-02-13 00:00:00 to 2025-02-13 11:00:00
+2025-02-13 11:25:57,817 - PowerManagementSystem - INFO - Calculated consumption for meter 123-456-788: 2.0 kWh
+2025-02-13 11:25:57,818 - PowerManagementSystem - INFO - Consumption retrieved successfully for meter ID: 123-456-788, period: today
+2025-02-13 11:26:36,100 - PowerManagementSystem - INFO - Received meter reading request for meter ID: 123-456-788 at timestamp: 2025-02-12 02:00:00
+2025-02-13 11:26:36,101 - PowerManagementSystem - INFO - Recording meter reading: meter_id=123-456-788, timestamp=2025-02-12 02:00:00, reading=99.5
+2025-02-13 11:26:36,101 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:26:36,101 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:27:20,599 - PowerManagementSystem - INFO - Received meter reading request for meter ID: 123-456-788 at timestamp: 2025-02-12 02:00:00
+2025-02-13 11:27:20,600 - PowerManagementSystem - INFO - Recording meter reading: meter_id=123-456-788, timestamp=2025-02-12 02:00:00, reading=99.5
+2025-02-13 11:27:20,600 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:27:20,600 - PowerManagementSystem - INFO - Meter reading successfully recorded for meter ID: 123-456-788
+2025-02-13 11:27:40,907 - PowerManagementSystem - INFO - Archiving readings for period: daily
+2025-02-13 11:27:40,926 - PowerManagementSystem - INFO - Archived data saved to D:\OneDrive\南洋理工\MSBA-T2\AN6007 - ADVANCED PROGRAMMING\Group Project\Archive\daily_2025-02-12.csv
+2025-02-13 11:33:45,137 - PowerManagementSystem - INFO - Received request to get last month's bill for meter ID: 123-456-788
+2025-02-13 11:33:45,138 - PowerManagementSystem - ERROR - Monthly archive file not found: D:\OneDrive\南洋理工\MSBA-T2\AN6007 - ADVANCED PROGRAMMING\Group Project\Archive\monthly_2025-01.csv
+2025-02-13 11:33:45,138 - PowerManagementSystem - ERROR - Unexpected error reading monthly archive file: Archive file for 2025-01 not found
+2025-02-13 11:33:45,139 - PowerManagementSystem - ERROR - Archive file not found: Archive file for 2025-01 not found

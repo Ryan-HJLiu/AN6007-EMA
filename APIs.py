@@ -228,9 +228,13 @@ class ElectricityManagementSystem:
             
         Returns:
             float: Total power consumption
+            
+        Raises:
+            ValueError: If meter not found or invalid period
+            FileNotFoundError: If archive file not found for last_month query
         """
         if meter_id not in self.accounts:
-            return None
+            raise ValueError(f"Meter ID {meter_id} not found")
             
         account = self.accounts[meter_id]
         now = datetime.now()
@@ -292,9 +296,13 @@ class ElectricityManagementSystem:
             start_time = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end_time = now
         else:
-            return None
+            raise ValueError(f"Invalid period: {period}. Must be one of: last_30min, today, this_week, this_month, last_month")
             
-        return account.calculate_consumption(start_time, end_time)
+        try:
+            return account.calculate_consumption(start_time, end_time)
+        except ValueError as e:
+            # 重新抛出ValueError，保持原始错误信息
+            raise ValueError(str(e))
     
     def get_last_month_bill(self, meter_id: str) -> Optional[Dict]:
         """
