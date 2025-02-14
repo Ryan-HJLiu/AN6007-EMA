@@ -16,28 +16,14 @@ app = FastAPI(title="Power Consumption Management System")
 # Create API instance
 api_system = APIs()  # Use the correct class name
 
-# Restore data on startup
+# Startup event only logs system start
 @app.on_event("startup")
 async def startup_event():
-    """Restore data from Archive and logs on application startup"""
+    """Log system startup"""
     try:
-        logger.info("Starting application, attempting to restore data...")
-        restorer = DataRestorer()
-        restored_data = restorer.restore_data()
-        
-        # Update system data
-        restored_meters = 0
-        restored_readings = 0
-        for meter_id, readings in restored_data.items():
-            if meter_id in api_system.accounts:
-                api_system.accounts[meter_id].meter_readings.update(readings)
-                restored_meters += 1
-                restored_readings += len(readings)
-        
-        logger.info(f"Successfully restored {restored_readings} readings for {restored_meters} meters")
+        logger.info("Starting application...")
     except Exception as e:
-        logger.error(f"Error during data restoration: {str(e)}")
-        # Don't raise the exception - allow the application to start even if restoration fails
+        logger.error(f"Error during startup: {str(e)}")
 
 # Define maintenance types
 class MaintenanceType(str, Enum):
@@ -250,19 +236,40 @@ async def perform_daily_maintenance():
         maintenance_type="daily"
     )
 
-async def perform_monthly_maintenance(meter_id: str):
+async def perform_monthly_maintenance():
     """Perform monthly maintenance tasks"""
-    archive_success = api_system.archive_readings("monthly", clear_memory=True)  # Monthly maintenance clears memory
-    current_month = api_system.get_consumption(meter_id, "this_month")
-    last_month = api_system.get_last_month_bill(meter_id)
-    
-    return BillingResponse(
-        success=archive_success,
-        message="Monthly maintenance completed" if archive_success else "Monthly maintenance failed",
-        timestamp=datetime.now().isoformat(),
-        current_month_consumption=current_month,
-        last_month_consumption=last_month
-    )
+    try:
+        # First get last month's data for all meters before archiving
+        meter_data = {}
+        for meter_id in api_system.accounts.keys():
+            try:
+                meter_data[meter_id] = {
+                    'current_month': api_system.get_consumption(meter_id, "this_month"),
+                    'last_month': api_system.get_consumption(meter_id, "last_month")
+                }
+            except ValueError:
+                # Skip if no data available for this meter
+                continue
+        
+        # Perform archiving
+        archive_success = api_system.archive_readings("monthly", clear_memory=True)
+        
+        if not archive_success:
+            raise Exception("Monthly archiving failed")
+        
+        return MaintenanceResponse(
+            success=True,
+            message="Monthly maintenance completed successfully",
+            timestamp=datetime.now().isoformat(),
+            maintenance_type="monthly"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error during monthly maintenance: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Monthly maintenance failed: {str(e)}"
+        )
 
 @app.post("/shutdown", response_model=SystemResponse)
 async def shutdown():
@@ -335,10 +342,9 @@ async def start_maintenance(maintenance_type: MaintenanceType):
                 raise HTTPException(status_code=500, detail="Daily maintenance failed")
         
         if maintenance_type in [MaintenanceType.MONTHLY, MaintenanceType.BOTH]:
-            for meter_id in api_system.accounts.keys():
-                monthly_result = await perform_monthly_maintenance(meter_id)
-                if not monthly_result.success:
-                    raise HTTPException(status_code=500, detail=f"Monthly maintenance failed for meter {meter_id}")
+            monthly_result = await perform_monthly_maintenance()
+            if not monthly_result.success:
+                raise HTTPException(status_code=500, detail="Monthly maintenance failed")
         
         return MaintenanceResponse(
             success=True,
@@ -348,7 +354,7 @@ async def start_maintenance(maintenance_type: MaintenanceType):
         )
     
     except Exception as e:
-        system_state.is_maintenance_mode = False
+        logger.error(f"Error during {maintenance_type.value} maintenance: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
     finally:
@@ -441,23 +447,28 @@ async def restore_data():
     - restored_readings_count: Total number of readings restored
     """
     try:
+        if system_state.is_maintenance_mode:
+            raise HTTPException(status_code=503, detail="System is in maintenance mode")
+            
         logger.info("Starting data restoration process")
         restorer = DataRestorer()
         restored_data = restorer.restore_data()
         
         # Update system data
         total_readings = 0
+        restored_meters = 0
         for meter_id, readings in restored_data.items():
             if meter_id in api_system.accounts:
                 api_system.accounts[meter_id].meter_readings.update(readings)
+                restored_meters += 1
                 total_readings += len(readings)
         
-        logger.info(f"Successfully restored {len(restored_data)} meters and {total_readings} readings")
+        logger.info(f"Successfully restored {restored_meters} meters and {total_readings} readings")
         return RestoreResponse(
             success=True,
             message="Data restored successfully",
             timestamp=datetime.now().isoformat(),
-            restored_meters_count=len(restored_data),
+            restored_meters_count=restored_meters,
             restored_readings_count=total_readings
         )
     except Exception as e:

@@ -212,11 +212,54 @@ class APIs:
         if meter_id not in self.accounts:
             raise ValueError(f"Meter ID {meter_id} not found")
         
+        now = datetime.now()
+        
+        # Special handling for last_month - read from archive
+        if period == "last_month":
+            # Calculate last month's year and month
+            if now.month == 1:
+                year = now.year - 1
+                month = 12
+            else:
+                year = now.year
+                month = now.month - 1
+            
+            # Get archive file path
+            archive_file = os.path.join("Archive", f"monthly_{year:04d}-{month:02d}.csv")
+            
+            if not os.path.exists(archive_file):
+                raise FileNotFoundError(f"Archive file not found: monthly_{year:04d}-{month:02d}.csv")
+            
+            # Read archive file
+            readings = {}
+            with open(archive_file, "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["meter_id"] == meter_id:  # Only process rows for this meter
+                        timestamp = datetime.fromisoformat(row["timestamp"])
+                        reading = float(row["reading"])
+                        readings[timestamp] = reading
+            
+            if not readings:
+                raise ValueError(f"No readings found for meter {meter_id} in last month's archive")
+            
+            # Get first and last readings
+            sorted_times = sorted(readings.keys())
+            start_reading = readings[sorted_times[0]]
+            end_reading = readings[sorted_times[-1]]
+            
+            return {
+                "start_reading": start_reading,
+                "end_reading": end_reading,
+                "consumption": end_reading - start_reading,
+                "start_time": sorted_times[0].isoformat(),
+                "end_time": sorted_times[-1].isoformat()
+            }
+        
+        # For other periods, use existing logic
         readings = self.accounts[meter_id].meter_readings
         if not readings:
             raise ValueError("No readings found for this meter")
-        
-        now = datetime.now()
         
         # Calculate time range based on period
         if period == "last_30min":
@@ -238,14 +281,6 @@ class APIs:
         elif period == "this_month":
             start_time = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end_time = now
-        
-        elif period == "last_month":
-            # Get first day of current month
-            first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            # Get last day of previous month
-            end_time = first_day - timedelta(days=1)
-            # Get first day of previous month
-            start_time = end_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
         else:
             raise ValueError("Invalid period")
