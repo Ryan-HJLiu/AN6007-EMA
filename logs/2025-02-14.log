@@ -145,3 +145,207 @@ INFO - 2025-02-14 21:56:06,722 - Restored reading from logs: 123-456-789, 2025-0
 INFO - 2025-02-14 21:56:06,723 - Restored 9 readings from today's logs
 INFO - 2025-02-14 21:56:06,723 - Restored 2 meter(s) data
 INFO - 2025-02-14 21:56:06,725 - Successfully restored 2 meters and 9 readings
+INFO - 2025-02-14 22:00:13,915 - Starting application...
+INFO - 2025-02-14 22:00:30,133 - Starting data restoration process
+INFO - 2025-02-14 22:00:30,135 - Starting data restoration process
+INFO - 2025-02-14 22:00:30,146 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,148 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,149 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,153 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,156 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,158 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,161 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:30,163 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:30,166 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:30,169 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,172 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,177 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:30,179 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,181 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:30,184 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:00:30,187 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:00:30,191 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:00:30,193 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:00:30,195 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:00:30,197 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:00:30,199 - Restored 2 meter(s) data
+INFO - 2025-02-14 22:00:30,201 - Successfully restored 2 meters and 9 readings
+INFO - 2025-02-14 22:00:41,025 - Starting data restoration process
+INFO - 2025-02-14 22:00:41,027 - Starting data restoration process
+INFO - 2025-02-14 22:00:41,032 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,034 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,036 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,038 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,039 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,042 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,047 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:41,049 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:41,052 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:41,054 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,057 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,060 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:41,067 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,071 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:41,076 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:00:41,081 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:00:41,086 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:00:41,100 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:00:41,107 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:00:41,117 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:00:41,121 - Restored 2 meter(s) data
+INFO - 2025-02-14 22:00:41,128 - Successfully restored 2 meters and 11 readings
+INFO - 2025-02-14 22:00:49,948 - Starting data restoration process
+INFO - 2025-02-14 22:00:49,950 - Starting data restoration process
+INFO - 2025-02-14 22:00:49,959 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,962 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,966 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,970 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,972 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,974 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,976 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:49,979 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:49,981 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:49,984 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,986 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,989 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:00:49,991 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,994 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:00:49,995 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:00:49,997 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:00:49,999 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:00:50,000 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:00:50,002 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:00:50,004 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:00:50,006 - Restored 2 meter(s) data
+INFO - 2025-02-14 22:00:50,009 - Successfully restored 2 meters and 11 readings
+INFO - 2025-02-14 22:04:15,496 - Starting application...
+INFO - 2025-02-14 22:04:28,955 - Starting data restoration process
+INFO - 2025-02-14 22:04:28,956 - Starting data restoration process
+INFO - 2025-02-14 22:04:28,958 - Restored 0 readings from CSV files
+INFO - 2025-02-14 22:04:28,961 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,962 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,963 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,964 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,965 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,967 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,967 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:28,968 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:28,969 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:28,970 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,970 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,971 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:28,972 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,974 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:28,976 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:28,977 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:28,977 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:04:28,978 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:04:28,979 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:04:28,981 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:04:28,983 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:04:28,985 - Total restored: 2 meter(s), 9 readings
+INFO - 2025-02-14 22:04:28,986 - Successfully restored 2 meters and 9 readings
+INFO - 2025-02-14 22:04:40,803 - Starting data restoration process
+INFO - 2025-02-14 22:04:40,805 - Starting data restoration process
+INFO - 2025-02-14 22:04:40,810 - Restored 4 readings from CSV files
+INFO - 2025-02-14 22:04:40,814 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,817 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,820 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,822 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,825 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,826 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,827 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:40,827 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:40,829 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:40,830 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,831 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,833 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:40,835 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,836 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:40,837 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:40,838 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:40,839 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:04:40,841 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:04:40,843 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:04:40,845 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:04:40,849 - Restored 7 readings from today's logs
+INFO - 2025-02-14 22:04:40,850 - Total restored: 2 meter(s), 11 readings
+INFO - 2025-02-14 22:04:40,852 - Successfully restored 2 meters and 11 readings
+INFO - 2025-02-14 22:04:41,626 - Starting data restoration process
+INFO - 2025-02-14 22:04:41,627 - Starting data restoration process
+INFO - 2025-02-14 22:04:41,630 - Restored 4 readings from CSV files
+INFO - 2025-02-14 22:04:41,634 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,635 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,635 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,636 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,637 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,638 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,638 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:41,638 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:41,639 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:41,640 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,641 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,641 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:41,643 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,643 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:41,644 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:41,645 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:41,645 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:04:41,646 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:04:41,647 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:04:41,647 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:04:41,648 - Restored 7 readings from today's logs
+INFO - 2025-02-14 22:04:41,650 - Total restored: 2 meter(s), 11 readings
+INFO - 2025-02-14 22:04:41,653 - Successfully restored 2 meters and 11 readings
+INFO - 2025-02-14 22:04:42,250 - Starting data restoration process
+INFO - 2025-02-14 22:04:42,252 - Starting data restoration process
+INFO - 2025-02-14 22:04:42,255 - Restored 4 readings from CSV files
+INFO - 2025-02-14 22:04:42,259 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,260 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,260 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,262 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,262 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,263 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,264 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:42,264 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:42,265 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:42,267 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,268 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,270 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:42,272 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,277 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:42,279 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:42,284 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:42,286 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:04:42,287 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:04:42,290 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:04:42,294 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:04:42,296 - Restored 7 readings from today's logs
+INFO - 2025-02-14 22:04:42,297 - Total restored: 2 meter(s), 11 readings
+INFO - 2025-02-14 22:04:42,298 - Successfully restored 2 meters and 11 readings
+INFO - 2025-02-14 22:04:49,274 - Starting data restoration process
+INFO - 2025-02-14 22:04:49,275 - Starting data restoration process
+INFO - 2025-02-14 22:04:49,280 - Restored 4 readings from CSV files
+INFO - 2025-02-14 22:04:49,283 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,286 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,287 - Restored reading from logs: 123-456-789, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,290 - Restored reading from logs: 999-999-999, 2025-02-13 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,296 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,299 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,302 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:49,306 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:49,310 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:49,313 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,317 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,319 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 102.5
+INFO - 2025-02-14 22:04:49,324 - Restored reading from logs: 123-456-789, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,327 - Restored reading from logs: 999-999-999, 2025-01-08 01:00:00, 100.5
+INFO - 2025-02-14 22:04:49,329 - Restored reading from logs: 999-999-999, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:49,331 - Restored reading from logs: 123-456-789, 2025-01-09 01:00:00, 103.5
+INFO - 2025-02-14 22:04:49,333 - Restored reading from logs: 123-456-789, 2025-02-14 12:00:00, 150.0
+INFO - 2025-02-14 22:04:49,335 - Restored reading from logs: 123-456-789, 2025-02-14 12:30:00, 150.5
+INFO - 2025-02-14 22:04:49,341 - Restored reading from logs: 123-456-789, 2025-02-14 11:30:00, 140.0
+INFO - 2025-02-14 22:04:49,343 - Restored 9 readings from today's logs
+INFO - 2025-02-14 22:04:49,344 - Restored 7 readings from today's logs
+INFO - 2025-02-14 22:04:49,346 - Total restored: 2 meter(s), 11 readings
+INFO - 2025-02-14 22:04:49,349 - Successfully restored 2 meters and 11 readings

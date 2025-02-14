@@ -62,24 +62,65 @@ class DataRestorer:
         - line: Log line to parse
         
         Returns:
-        - Tuple of (meter_id, timestamp, reading)
+        - Tuple of (meter_id, timestamp, reading) or None if parsing fails
         
         Example log line:
         INFO - 2025-02-14 12:38:43,081 - Meter reading recorded successfully: 999-999-999, 2025-01-08 01:00:00, 100.5
         """
-        # Extract meter ID, timestamp and reading using regex
-        pattern = r"INFO - [\d-]+ [\d:,]+ - Meter reading recorded successfully: ([\w-]+), ([\d-]+ [\d:]+), ([\d.]+)"
-        match = re.search(pattern, line)
-        if not match:
-            return None
-        
         try:
-            meter_id = match.group(1)
-            timestamp = datetime.strptime(match.group(2), "%Y-%m-%d %H:%M:%S")
-            reading = float(match.group(3))
-            return meter_id, timestamp, reading
-        except (ValueError, IndexError):
+            # More strict regex pattern
+            pattern = r"INFO - (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - Meter reading recorded successfully: ([\w-]+), (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}), ([\d.]+)"
+            match = re.search(pattern, line)
+            if not match:
+                return None
+            
+            # Extract components
+            log_timestamp = datetime.strptime(match.group(1).split(',')[0], "%Y-%m-%d %H:%M:%S")
+            meter_id = match.group(2)
+            reading_timestamp = datetime.strptime(match.group(3), "%Y-%m-%d %H:%M:%S")
+            reading = float(match.group(4))
+            
+            # Validate reading timestamp
+            if reading_timestamp.minute not in [0, 30] or reading_timestamp.second != 0:
+                logger.warning(f"Invalid reading timestamp format in log: {reading_timestamp}")
+                return None
+            
+            return meter_id, reading_timestamp, reading
+        except (ValueError, IndexError) as e:
+            logger.warning(f"Error parsing log line: {str(e)}")
             return None
+    
+    def _validate_reading(self, meter_id: str, timestamp: datetime, reading: float, readings: Dict[str, Dict[datetime, float]]) -> bool:
+        """
+        Validate reading before restoring
+        
+        Parameters:
+        - meter_id: Meter ID
+        - timestamp: Reading timestamp
+        - reading: Reading value
+        - readings: Current restored readings
+        
+        Returns:
+        - Whether the reading is valid
+        """
+        try:
+            # Check timestamp format
+            if timestamp.minute not in [0, 30] or timestamp.second != 0:
+                logger.warning(f"Invalid timestamp format: {timestamp}")
+                return False
+            
+            # Check if reading already exists
+            if meter_id in readings and timestamp in readings[meter_id]:
+                existing_reading = readings[meter_id][timestamp]
+                if abs(existing_reading - reading) > 0.01:  # Allow small floating point differences
+                    logger.warning(f"Conflicting reading found for {meter_id} at {timestamp}: {existing_reading} != {reading}")
+                    return False
+                return False  # Skip duplicate reading
+            
+            return True
+        except Exception as e:
+            logger.warning(f"Error validating reading: {str(e)}")
+            return False
     
     def _get_today_readings_from_logs(self) -> Dict[str, Dict[datetime, float]]:
         """
@@ -125,24 +166,38 @@ class DataRestorer:
         
         # 1. Restore from daily CSV files
         daily_files = self._get_daily_files_for_current_month()
+        restored_from_csv = 0
         for file in daily_files:
-            with open(file, "r") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    meter_id = row["meter_id"]
-                    timestamp = datetime.fromisoformat(row["timestamp"])
-                    reading = float(row["reading"])
-                    
-                    if meter_id not in restored_data:
-                        restored_data[meter_id] = {}
-                    restored_data[meter_id][timestamp] = reading
+            try:
+                with open(file, "r") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        meter_id = row["meter_id"]
+                        timestamp = datetime.fromisoformat(row["timestamp"])
+                        reading = float(row["reading"])
+                        
+                        if self._validate_reading(meter_id, timestamp, reading, restored_data):
+                            if meter_id not in restored_data:
+                                restored_data[meter_id] = {}
+                            restored_data[meter_id][timestamp] = reading
+                            restored_from_csv += 1
+            except Exception as e:
+                logger.error(f"Error processing CSV file {file}: {str(e)}")
+                continue
+        
+        logger.info(f"Restored {restored_from_csv} readings from CSV files")
         
         # 2. Restore from today's logs
         today_readings = self._get_today_readings_from_logs()
+        restored_from_logs = 0
         for meter_id, readings in today_readings.items():
             if meter_id not in restored_data:
                 restored_data[meter_id] = {}
-            restored_data[meter_id].update(readings)
+            for timestamp, reading in readings.items():
+                if self._validate_reading(meter_id, timestamp, reading, restored_data):
+                    restored_data[meter_id][timestamp] = reading
+                    restored_from_logs += 1
         
-        logger.info(f"Restored {len(restored_data)} meter(s) data")
+        logger.info(f"Restored {restored_from_logs} readings from today's logs")
+        logger.info(f"Total restored: {len(restored_data)} meter(s), {restored_from_csv + restored_from_logs} readings")
         return restored_data
