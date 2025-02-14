@@ -65,10 +65,10 @@ class DataRestorer:
         - Tuple of (meter_id, timestamp, reading)
         
         Example log line:
-        Meter reading recorded successfully: 123-456-789, 2025-02-13 05:00:00, 4.0
+        INFO - 2025-02-14 12:38:43,081 - Meter reading recorded successfully: 999-999-999, 2025-01-08 01:00:00, 100.5
         """
         # Extract meter ID, timestamp and reading using regex
-        pattern = r"Meter reading recorded successfully: ([\w-]+), ([\d-]+ [\d:]+), ([\d.]+)"
+        pattern = r"INFO - [\d-]+ [\d:,]+ - Meter reading recorded successfully: ([\w-]+), ([\d-]+ [\d:]+), ([\d.]+)"
         match = re.search(pattern, line)
         if not match:
             return None
@@ -91,19 +91,26 @@ class DataRestorer:
         today = datetime.now().date()
         log_file = os.path.join(self.logs_dir, f"{today.isoformat()}.log")
         if not os.path.exists(log_file):
+            logger.warning(f"Today's log file not found: {log_file}")
             return {}
         
         readings = {}
-        with open(log_file, "r") as f:
-            for line in f:
-                if "Meter reading successfully recorded" in line:
-                    result = self._parse_log_line(line)
-                    if result:
-                        meter_id, timestamp, reading = result
-                        if meter_id not in readings:
-                            readings[meter_id] = {}
-                        readings[meter_id][timestamp] = reading
+        try:
+            with open(log_file, "r", encoding='utf-8') as f:
+                for line in f:
+                    if "Meter reading recorded successfully" in line:
+                        result = self._parse_log_line(line)
+                        if result:
+                            meter_id, timestamp, reading = result
+                            if meter_id not in readings:
+                                readings[meter_id] = {}
+                            readings[meter_id][timestamp] = reading
+                            logger.info(f"Restored reading from logs: {meter_id}, {timestamp}, {reading}")
+        except Exception as e:
+            logger.error(f"Error reading log file {log_file}: {str(e)}")
+            return {}
         
+        logger.info(f"Restored {sum(len(r) for r in readings.values())} readings from today's logs")
         return readings
     
     def restore_data(self) -> Dict[str, Dict[datetime, float]]:
